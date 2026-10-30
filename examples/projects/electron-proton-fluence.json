@@ -1,0 +1,183 @@
+{
+  "duration_s": 64.0,
+  "environment": {
+    "angular_convention": "omnidirectional_scalar",
+    "angular_distribution": "isotropic",
+    "metadata": {
+      "confidence_level": null,
+      "epoch_utc": null,
+      "interval_end_utc": null,
+      "interval_start_utc": null,
+      "model": null,
+      "model_version": null,
+      "orbit_source": null,
+      "percentile": null,
+      "statistical_mode": null
+    },
+    "quantity": "differential_fluence",
+    "source": "SYNTHETIC manually specified differential environment; no orbit model executed",
+    "spectra": [
+      {
+        "energy_MeV": [
+          10.0,
+          20.0,
+          30.0
+        ],
+        "particle": "proton",
+        "provenance": {
+          "conversions": [
+            {
+              "duration_s": 64.0,
+              "factor": 64.0,
+              "from": "differential_flux",
+              "operation": "quantity_conversion",
+              "to": "differential_fluence"
+            }
+          ],
+          "manual_definition": {
+            "angular_convention": "omnidirectional_scalar",
+            "quantity": "differential_flux",
+            "schema": "spacerad.manual-spectrum/1"
+          },
+          "source_file": null
+        },
+        "values": [
+          64.0,
+          64.0,
+          64.0
+        ]
+      },
+      {
+        "energy_MeV": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "particle": "e-",
+        "provenance": {
+          "conversions": [
+            {
+              "duration_s": 64.0,
+              "factor": 64.0,
+              "from": "differential_flux",
+              "operation": "quantity_conversion",
+              "to": "differential_fluence"
+            }
+          ],
+          "manual_definition": {
+            "angular_convention": "omnidirectional_scalar",
+            "quantity": "differential_flux",
+            "schema": "spacerad.manual-spectrum/1"
+          },
+          "source_file": null
+        },
+        "values": [
+          256.0,
+          128.0,
+          0.0
+        ]
+      }
+    ],
+    "synthetic": true,
+    "unit": "cm-2 MeV-1"
+  },
+  "events": 100000,
+  "name": "Synthetic electron-proton TID demonstration (fluence)",
+  "physics_list": "FTFP_BERT_EMZ",
+  "production_cut_mm": 0.1,
+  "provenance": {
+    "last_loaded_input": null,
+    "migration_origin": null,
+    "origin_schema": "scdat.radiation/2"
+  },
+  "schema": "scdat.radiation/2",
+  "seed": 19780503,
+  "source_radius_mm": 500.0,
+  "units": {
+    "energy": "MeV_per_particle",
+    "length": "mm",
+    "time": "s"
+  },
+  "volumes": [
+    {
+      "center_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "id": "Spacecraft_Al",
+      "material": "G4_Al",
+      "sensitive": false,
+      "size_mm": [
+        600.0,
+        500.0,
+        400.0
+      ],
+      "wall_mm": 3.0
+    },
+    {
+      "center_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "id": "Electronics_box",
+      "material": "G4_Al",
+      "sensitive": false,
+      "size_mm": [
+        220.0,
+        180.0,
+        100.0
+      ],
+      "wall_mm": 2.0
+    },
+    {
+      "center_mm": [
+        -45.0,
+        0.0,
+        0.0
+      ],
+      "id": "OBC_Si",
+      "material": "G4_Si",
+      "sensitive": true,
+      "size_mm": [
+        50.0,
+        50.0,
+        2.0
+      ],
+      "wall_mm": 0.0
+    },
+    {
+      "center_mm": [
+        50.0,
+        15.0,
+        5.0
+      ],
+      "id": "Payload_Si",
+      "material": "G4_Si",
+      "sensitive": true,
+      "size_mm": [
+        40.0,
+        40.0,
+        2.0
+      ],
+      "wall_mm": 0.0
+    },
+    {
+      "center_mm": [
+        0.0,
+        0.0,
+        220.0
+      ],
+      "id": "Solar_cell_Si",
+      "material": "G4_Si",
+      "sensitive": true,
+      "size_mm": [
+        160.0,
+        100.0,
+        1.0
+      ],
+      "wall_mm": 0.0
+    }
+  ]
+}

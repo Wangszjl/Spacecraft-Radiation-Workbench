@@ -104,6 +104,24 @@ The optional adapter lives in `integration/tkmaster`. It accepts a serialized co
 
 The existing TKMaster CMake project has an opt-in `SPACERAD_SOURCE_DIR` setting. Configure it together with `SpaceRad_DIR` pointing to this project's installed `lib/cmake/SpaceRad`. The simulation menu gains **SpaceRad 辐射分析组件...**. The adapter reads `SPACERAD_RUNTIME_FILE` when set, otherwise `spacerad-runtime.json` beside the host executable. Runtime paths can also be supplied in the page. Both old and new radiation modules can coexist; their C++ types are isolated and the bridge uses JSON.
 
+## Editable environments (0.1.2)
+
+`spacerad/Environment.h` provides Qt-free `setManualSpectrum(base, index, particle, energy, values, interpolation)` and `removeSpectrum(base, index)`. An index equal to `base.spectra.size()` appends; an existing index replaces. Duplicate particle declarations in other rows and removal of the final spectrum are rejected. The input remains unchanged and every returned project is validated. The shared widget exposes the same operations in its Environment tab.
+
+```cpp
+#include <spacerad/Environment.h>
+
+auto input = workbench->project();
+auto edited = spacerad::setManualSpectrum(input, input.spectra.size(),
+    "e-", {1, 2, 3}, {4, 2, 0}); // append if e- is not already present
+workbench->setProject(edited);
+auto fluence = edited.convertedQuantity(spacerad::engine::SpectrumQuantity::Fluence);
+```
+
+Manual values use the project's current quantity and existing isotropic omnidirectional-scalar convention. Linear interpolation uses equal energy/value counts; `bin_constant` requires one more energy edge than value. The editor supports up to 2048 energy rows, preserves 17-digit numbers, and requires the last value cell to be empty for bin edges. It never sorts points automatically. Manually changing/removing a spectrum marks the environment synthetic and clears global orbit-model metadata. Unedited spectra retain their source provenance; the edited spectrum receives `spacerad.manual-spectrum/1` provenance instead of claiming an original CSV file still defines it.
+
+`Project::convertedQuantity` converts every spectrum using the current duration and records each conversion. Flux normalization is `pi * R_cm^2 * integral * duration`; fluence normalization is `pi * R_cm^2 * integral`, with duration retained as context. A host should use this operation rather than relabeling units. The normalization label is refreshed on valid parameter changes and reports when the parameters are invalid. Manual dialogs have revision guards against stale host updates; environment controls are disabled during transport. The widget's scroll area supports smaller embedding windows.
+
 ## Validation status
 
-Local Windows 0.1.1 acceptance passed: 34/34 CTests; 21 authoring checks; 27 native UI checks repeated with the packaged Worker; standalone, embedding example and actual TKMaster runs; installed SDK consumption with the old same-named header directory placed first; runtime relocation without developer library paths. The actual TKMaster test verified component selection, result return and byte-identical host scene state after its initial delayed setup. See [authoring acceptance](AUTHORING_ACCEPTANCE.md) and [foundation acceptance](BOOTSTRAP_ACCEPTANCE.md). Clean-machine deployment, CI, Linux, ownership/license review, data redistribution and independent physical validation remain open.
+Local Windows 0.1.2 acceptance passed: 35/35 CTests; 41 environment checks; 31 environment UI checks repeated with the packaged Worker; 27 authoring regression checks; standalone, embedding example and actual TKMaster runs; installed SDK consumption with the old same-named header directory placed first; runtime relocation without developer library paths. TKMaster additionally accepted the two-particle manual environment without changing its points/provenance or the host scene. See [environment acceptance](ENVIRONMENT_ACCEPTANCE.md), [authoring acceptance](AUTHORING_ACCEPTANCE.md) and [foundation acceptance](BOOTSTRAP_ACCEPTANCE.md). Clean-machine deployment, CI, Linux, ownership/license review, data redistribution and independent physical validation remain open.

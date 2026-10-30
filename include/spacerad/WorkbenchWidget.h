@@ -25,7 +25,7 @@ signals:
  void componentSelected(const QString& id);
 private:
  struct Impl;std::unique_ptr<Impl> d;
- void refresh();void invalidate();void showError(const QString&);void rebuildModelTree(const Project&);
+ void refresh();void invalidate();void showError(const QString&);void rebuildModelTree(const Project&);void updateEnvironment(const Project&);
 };
 RuntimeOptions loadRuntimeFile(const QString& path);
 }
