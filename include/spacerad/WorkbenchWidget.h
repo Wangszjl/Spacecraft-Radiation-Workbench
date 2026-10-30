@@ -17,12 +17,15 @@ public:
  void cancel();
  QByteArray acceptedResult() const;
  AnalysisService* service() const;
+ void selectComponent(const QString& id);
+ QString selectedComponent() const;
 signals:
  void resultReady(const QByteArray&);
  void projectChanged();
+ void componentSelected(const QString& id);
 private:
  struct Impl;std::unique_ptr<Impl> d;
- void refresh();void invalidate();void showError(const QString&);
+ void refresh();void invalidate();void showError(const QString&);void rebuildModelTree(const Project&);
 };
 RuntimeOptions loadRuntimeFile(const QString& path);
 }

@@ -14,7 +14,8 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 
 ## Subsequent product work
 
-- [ ] More convenient spacecraft model creation/import and device placement workflows; complete CAD UI is not included in this batch.
+- [x] Basic project creation and analytic component add/edit/remove dialogs; model/tree/result selection and 3D focus. Version 0.1.1: 34/34 CTests, 27 native workflow checks and real TKMaster revalidation. See [authoring acceptance](AUTHORING_ACCEPTANCE.md).
+- [ ] Extended spacecraft model import/assembly workflows, placement tools and full CAD interaction.
 - [ ] Reference environment/model execution and qualified environment examples; current first UI uses synthetic or externally supplied spectra.
 - [ ] Calibrated device DDD/SEE workflows and response data.
 - [ ] Independent physical validation and geometry/dose sensitivity studies.

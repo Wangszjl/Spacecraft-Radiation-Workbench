@@ -15,7 +15,8 @@ For the current integration stage, use the source targets or static libraries bu
 
 ```cmake
 find_package(SpaceRad CONFIG REQUIRED)
-target_link_libraries(my_host PRIVATE SpaceRad::Widgets)
+find_package(VTK REQUIRED COMPONENTS GUISupportQt)
+target_link_libraries(my_host PRIVATE SpaceRad::Widgets VTK::GUISupportQt)
 ```
 
 The widgets target brings in its service and model dependencies. The worker is deployed separately; do not link it or Geant4 into the Qt host.
@@ -45,11 +46,15 @@ This example uses the built-in demo project to show the integration path. A real
 #include <QApplication>
 #include <QCoreApplication>
 #include <QMainWindow>
+#include <QSurfaceFormat>
+#include <QVTKOpenGLNativeWidget.h>
 #include <spacerad/Project.h>
 #include <spacerad/WorkbenchWidget.h>
 
 int main(int argc, char* argv[])
 {
+    // The host establishes its OpenGL format before QApplication/VTK widgets.
+    QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
     QApplication app(argc, argv); // The host creates QApplication once.
 
     QMainWindow window;
@@ -72,7 +77,26 @@ The widget owns its service, and its `setRuntime` and `setProject` methods confi
 
 Use `setProject` to supply a validated project, `loadProject`/`saveProject` to handle project files, `runTo(newDirectory)` to start an analysis in a new output directory, and `cancel()` to request cancellation. Read accepted output with `acceptedResult()` or observe `resultReady`. A changed project invalidates its previously accepted result. Existing output directories cannot be reused as a run destination.
 
-The first UI path supports analytic boxes, box shells, cylinders, and spheres; synthetic demo or user-provided differential CSV spectra; component materials/sensitivity; history and exposure controls; and per-target TID and Monte Carlo errors. DDD and SEE are unavailable, and a complete CAD authoring UI is not promised by this batch.
+The shared UI supports new basic projects and add/edit/remove dialogs for analytic boxes, box shells, cylinders and spheres, including parent assembly, local position/rotation, material identifier and sensitivity. Edits are validated before replacement. Implicit template descendants remain selectable but these dialogs only modify authored volumes. Synthetic demo or user-provided differential CSV spectra, history/exposure controls and per-target TID and Monte Carlo errors remain supported. DDD and SEE are unavailable, and a complete CAD authoring UI is not promised by this batch.
+
+## Authoring and component navigation (0.1.1)
+
+The Qt-free `spacerad/Authoring.h` API exposes `suggestPart`, `addPart`, `replacePart` and `removePart`. Each edit returns a validated copy and leaves its input unchanged. The suggestions are bounded placement attempts for a small analytic component; they do not resize the source or certify a material name. Link `SpaceRad::Model` to use these operations without the widget.
+
+```cpp
+#include <spacerad/Authoring.h>
+
+auto input = workbench->project();
+auto part = spacerad::suggestPart(input, "box", true);
+part.id = "Detector_Si";
+auto edited = spacerad::addPart(input, part); // throws on invalid geometry
+workbench->setProject(edited);               // invalidates the previous result
+workbench->selectComponent(QStringLiteral("Detector_Si"));
+```
+
+`selectComponent(stableId)`, `selectedComponent()` and `componentSelected(QString)` let the host synchronize its own component list. An empty ID clears the selection; an unknown ID throws before changing it. Selection synchronizes the model tree, authored-volume table and result table, highlights the actor and focuses the camera. A hidden component is revealed temporarily, while its stored visibility, physics input and accepted result remain unchanged. Selecting another component or clearing selection restores the previous display settings. Selection does not constitute a new analysis or device qualification.
+
+The host may replace the project while an authoring dialog is open. A revision check prevents the old dialog from overwriting that newer host project. During transport, authoring and project replacement are blocked.
 
 ## Actual TKMaster integration
 
@@ -82,4 +106,4 @@ The existing TKMaster CMake project has an opt-in `SPACERAD_SOURCE_DIR` setting.
 
 ## Validation status
 
-Local Windows acceptance passed: 33/33 CTests; 16 real-Worker service checks; standalone, embedding example and actual TKMaster runs; installed SDK consumption with the old same-named header directory placed first; runtime relocation without developer library paths. The actual TKMaster test verified result return and byte-identical host scene state after its initial delayed setup. See [acceptance](BOOTSTRAP_ACCEPTANCE.md). Clean-machine deployment, CI, Linux, ownership/license review, data redistribution and independent physical validation remain open.
+Local Windows 0.1.1 acceptance passed: 34/34 CTests; 21 authoring checks; 27 native UI checks repeated with the packaged Worker; standalone, embedding example and actual TKMaster runs; installed SDK consumption with the old same-named header directory placed first; runtime relocation without developer library paths. The actual TKMaster test verified component selection, result return and byte-identical host scene state after its initial delayed setup. See [authoring acceptance](AUTHORING_ACCEPTANCE.md) and [foundation acceptance](BOOTSTRAP_ACCEPTANCE.md). Clean-machine deployment, CI, Linux, ownership/license review, data redistribution and independent physical validation remain open.

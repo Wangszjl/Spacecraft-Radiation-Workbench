@@ -9,6 +9,7 @@ public:
  ~GeometryView() override;
  void setProject(const Project&);
  void fit();
+ void select(const std::string& id);
 private:struct Impl;std::unique_ptr<Impl> d;
 };
 }

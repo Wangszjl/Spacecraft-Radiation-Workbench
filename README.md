@@ -2,13 +2,13 @@
 
 Spacecraft Radiation Workbench is an independent C++/Qt desktop application and reusable analysis UI for spacecraft radiation studies. Its standalone shell and an embedding Qt host use the same `spacerad::WorkbenchWidget` and `spacerad::AnalysisService`. Geant4 runs in a separate `scdat_radiation_worker` process; the GUI host does not link Geant4.
 
-The first local engineering milestone is verified on Windows: 33/33 CTests, 16 real-Worker service checks, standalone and embedded shells, actual TKMaster integration, and a runtime bundle launched with developer DLL paths removed. Each of the four host/runtime cases completed 10,000 histories over four sensitive regions with identical seeded target doses and raw moments. See [acceptance](docs/BOOTSTRAP_ACCEPTANCE.md). This is a local research application; public-release and independent physical validation are not complete.
+Local version 0.1.1 adds basic component authoring and synchronized model/table/3D result selection. Verification includes 34/34 CTests, 21 model-authoring checks, 27 native UI checks repeated with the packaged Worker, installed SDK consumption, standalone and embedded shells, actual TKMaster integration, and a runtime bundle launched with developer DLL paths removed. See [authoring acceptance](docs/AUTHORING_ACCEPTANCE.md). The earlier foundation evidence remains in [bootstrap acceptance](docs/BOOTSTRAP_ACCEPTANCE.md). This is a local research application; public-release and independent physical validation are not complete.
 
-For this workstation, launch `dist/SpaceRad-0.1.0-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them.
+For this workstation, launch `dist/SpaceRad-0.1.1-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them.
 
 ## First workflow scope
 
-The first workflow targets analytic spacecraft geometry (boxes, box shells, cylinders, and spheres), synthetic demo or user-supplied differential CSV spectra, component materials and sensitivity, history/exposure controls, per-target TID and Monte Carlo errors, and saved projects/results. The model and worker retain mesh-related code, but this batch does not promise a full CAD UI. DDD and SEE are unavailable. Independent physical validation has not been completed.
+The workflow supports new basic projects, add/edit/remove dialogs for boxes, box shells, cylinders and spheres, component materials/sensitivity and placement, synthetic demo or user-supplied differential CSV spectra, history/exposure controls, per-target TID and Monte Carlo errors, and saved projects/results. Select a model tree item or result row to highlight and focus the component. Edits pass the existing geometry/source checks; deleting the last sensitive region is rejected. Template-generated descendants are selectable but are not directly editable by these dialogs. The model and worker retain mesh-related code, but this batch does not promise a full CAD UI. DDD and SEE are unavailable. Independent physical validation has not been completed.
 
 ## Build
 
