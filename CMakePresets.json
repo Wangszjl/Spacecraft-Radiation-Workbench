@@ -1,0 +1,43 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "desktop",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/desktop",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTING": "ON",
+        "SPACERAD_BUILD_DESKTOP": "ON",
+        "SPACERAD_BUILD_WORKER": "ON"
+      }
+    },
+    {
+      "name": "worker",
+      "inherits": "desktop",
+      "binaryDir": "${sourceDir}/build/worker",
+      "cacheVariables": {
+        "SPACERAD_BUILD_DESKTOP": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "desktop",
+      "configurePreset": "desktop"
+    },
+    {
+      "name": "worker",
+      "configurePreset": "worker"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "desktop",
+      "configurePreset": "desktop",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+cmake_minimum_required(VERSION 3.22)
+foreach(_key BUILD_DIR DESTINATION QT_PREFIX VTK_PREFIX GEANT4_PREFIX)
+ if(NOT DEFINED ${_key})
+  message(FATAL_ERROR "Missing ${_key}")
+ endif()
+endforeach()
+if(EXISTS "${DESTINATION}")
+ message(FATAL_ERROR "Refusing existing bundle directory")
+endif()
+file(MAKE_DIRECTORY "${DESTINATION}/platforms")
+set(_executables "${BUILD_DIR}/spacerad.exe" "${BUILD_DIR}/spacerad_embedded_example.exe" "${BUILD_DIR}/scdat_radiation_worker.exe")
+file(COPY ${_executables} "${BUILD_DIR}/radiation-build.json" "${BUILD_DIR}/radiation-datasets.txt" DESTINATION "${DESTINATION}")
+file(COPY "${QT_PREFIX}/plugins/platforms/qwindows.dll" DESTINATION "${DESTINATION}/platforms")
+if(EXISTS "${QT_PREFIX}/plugins/styles")
+ file(COPY "${QT_PREFIX}/plugins/styles" DESTINATION "${DESTINATION}" FILES_MATCHING PATTERN "*.dll")
+endif()
+file(GET_RUNTIME_DEPENDENCIES EXECUTABLES ${_executables}
+ LIBRARIES "${QT_PREFIX}/plugins/platforms/qwindows.dll"
+ DIRECTORIES "${QT_PREFIX}/bin" "${VTK_PREFIX}/bin" "${GEANT4_PREFIX}/bin"
+ RESOLVED_DEPENDENCIES_VAR _resolved UNRESOLVED_DEPENDENCIES_VAR _missing
+ PRE_EXCLUDE_REGEXES "api-ms-.*" "ext-ms-.*"
+ POST_EXCLUDE_REGEXES ".*[/\\][Ww][Ii][Nn][Dd][Oo][Ww][Ss][/\\].*")
+if(_missing)
+ message(FATAL_ERROR "Unresolved runtime libraries: ${_missing}")
+endif()
+foreach(_file IN LISTS _resolved)
+ file(COPY "${_file}" DESTINATION "${DESTINATION}")
+endforeach()
+list(LENGTH _resolved _count)
+file(WRITE "${DESTINATION}/qt.conf" "[Paths]\nPlugins=.\n")
+file(WRITE "${DESTINATION}/runtime-inventory.txt" "Resolved runtime libraries: ${_count}\n${_resolved}\n")
+message(STATUS "Staged ${_count} runtime DLLs. Dataset root is configured separately; licensing and clean-machine validation remain release gates.")

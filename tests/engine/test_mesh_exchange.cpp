@@ -1,0 +1,31 @@
+#include "runtime/TriangleMeshExchange.h"
+#include "runtime/ProjectFile.h"
+#include <QFile>
+#include <QTemporaryDir>
+#include <QCryptographicHash>
+#include <iostream>
+#include <stdexcept>
+using namespace spacerad::engine;
+int checks=0;void check(bool ok,const char* message){++checks;if(!ok)throw std::runtime_error(message);}
+Json fixture(){TriangleMesh t{{{0,0,0},{1,0,0},{0,1,0},{0,0,1}},{{0,2,1},{0,1,3},{0,3,2},{1,2,3}}};return makeTriangleMeshBundle(t,"Chip","G4_Si",true,{10,20,30},{0,0,90},{{"kind","external_mesh"},{"description","unit tetra fixture; not CAD evidence"}});}
+TriangleMeshReview inspect(const Json& j){return inspectTriangleMeshBytes(QByteArray::fromStdString(j.dump()),"mesh.json");}
+bool rejects(const Json& j){try{inspect(j);return false;}catch(const std::exception&){return true;}}
+int main(){try{
+    auto j=fixture();auto a=inspect(j);check(a.report.at("geometry_gate_passed")==true&&a.report.at("status")=="review_only","positive tetra topology");check(a.report.at("transport_allowed")==false&&a.report.at("density_kg_m3").is_null(),"review cannot authorize transport or material");check(a.mesh.points[1]==Vector3{1,0,0},"input local points retained");check(std::abs(a.placement.apply({1,0,0})[1]-21)<1e-12,"Rz placement");check(std::abs(a.report.at("quality").at("signed_volume_mm3").get<double>()-1./6)<1e-14,"tetra volume");
+    for(auto unit:{"cm","m"}){auto scaled=j;scaled["units"]["length"]=unit;double factor=std::string(unit)=="cm"?10:1000;auto r=inspect(scaled);check(r.mesh.points[1][0]==factor&&r.placement.translation[0]==10*factor,"length applies to local points AND center");check(std::abs(r.report.at("quality").at("signed_volume_mm3").get<double>()/(factor*factor*factor/6)-1)<1e-12,"cubic volume conversion");}
+    auto bad=j;bad["units"]["length"]="inch";check(rejects(bad),"unknown unit rejected");bad=j;bad["units"].erase("length");check(rejects(bad),"missing units not guessed");bad=j;bad["part"]["triangles"][0][0]=1.;check(rejects(bad),"float index rejected");bad=j;bad["part"]["triangles"][0][0]=-1;check(rejects(bad),"negative index rejected");bad=j;bad["part"]["triangles"][0][0]=18446744073709551615ull;check(rejects(bad),"uint64 overflow index rejected");bad=j;bad["part"]["points"][0][0]="0";check(rejects(bad),"numeric strings rejected");bad=j;bad["part"]["sensitive"]=1;check(rejects(bad),"sensitive bool strict");bad=j;bad["physics_list"]="FTFP_BERT";check(rejects(bad),"project payload rejected");bad=j;bad["part"]["material"]="Unknown";check(rejects(bad),"missing NIST identifier rejected");bad=j;bad["part"]["id"]="../Chip";check(rejects(bad),"unsafe id rejected");
+    bad=j;bad["part"]["triangles"].erase(3);auto open=inspect(bad);check(open.report.at("status")=="rejected"&&open.report.at("display_preview_allowed")==true,"open mesh can be diagnosed, never passes");
+    bad=j;for(auto& face:bad["part"]["triangles"])std::swap(face[0],face[1]);check(inspect(bad).report.at("geometry_gate_passed")==false,"inward component rejected without repair");
+    bad=j;bad["part"]["points"].push_back({5,5,5});check(inspect(bad).report.at("geometry_gate_passed")==false,"unused vertices gate");
+    bad=j;bad["part"]["triangles"].push_back({0,0,1});check(inspect(bad).report.at("geometry_gate_passed")==false,"degenerate gate");
+    bad=j;bad["part"]["points"][1][0]=1e9;bad["units"]["length"]="m";check(rejects(bad),"scaled coordinate budget");bad=j;bad["part"]["center"]={1e9,0,0};bad["part"]["rotation_deg"]={0,0,0};check(rejects(bad),"placed coordinate budget");
+    bad=j;bad["part"]["points"]=Json::array();check(rejects(bad),"empty point array");bad=j;bad["part"]["triangles"][0]={0,1,2,3};check(rejects(bad),"nontriangle cell rejected");
+    auto raw=QByteArray::fromStdString(j.dump());auto repeated=raw;repeated.replace("\"length\":\"mm\"","\"length\":\"cm\",\"length\":\"mm\"");bool caught=false;try{inspectTriangleMeshBytes(repeated,"duplicate.json");}catch(const std::exception&){caught=true;}check(caught,"duplicate unit key rejected");
+    a=inspectTriangleMeshBytes(raw,"original.json");check(a.report.at("input").at("sha256")==QCryptographicHash::hash(raw,QCryptographicHash::Sha256).toHex().toStdString(),"identity hashes original raw bytes");check(a.report.at("declared_source_verified")==false,"declared provenance not certified");
+    QTemporaryDir dir;check(dir.isValid(),"temporary output");auto path=dir.filePath("mesh.json");writeTriangleMeshBundle(path,j);check(inspectTriangleMeshFile(path).bundle==j,"file round trip");caught=false;try{writeTriangleMeshBundle(path,j);}catch(const std::exception&){caught=true;}check(caught,"existing output protected");
+    bad=j;bad["units"]["length"]="unknown";auto invalidPath=dir.filePath("invalid.json");caught=false;try{writeTriangleMeshBundle(invalidPath,bad);}catch(const std::exception&){caught=true;}check(caught&&!QFile::exists(invalidPath),"invalid export atomic");caught=false;try{Project::fromJson(j);}catch(const std::exception&){caught=true;}check(caught,"mesh is never accepted as radiation Project");
+    bad=j;bad["part"]["points"]=Json::array();for(int i=0;i<100001;++i)bad["part"]["points"].push_back({0,0,0});check(rejects(bad),"point count budget enforced");bad=j;bad["part"]["triangles"]=Json::array();for(int i=0;i<200001;++i)bad["part"]["triangles"].push_back({0,1,2});check(rejects(bad),"triangle count budget enforced");
+    caught=false;try{inspectTriangleMeshBytes(QByteArray(16*1024*1024+1,' '),"oversized.json");}catch(const std::exception&){caught=true;}check(caught,"byte budget enforced");auto deep=QByteArray(40,'[')+"0"+QByteArray(40,']');caught=false;try{inspectTriangleMeshBytes(deep,"deep.json");}catch(const std::exception&){caught=true;}check(caught,"nesting budget enforced");
+    bad=j;for(const auto& p:j["part"]["points"]){auto shifted=p;shifted[0]=p[0].get<double>()+3;bad["part"]["points"].push_back(shifted);}for(auto f:j["part"]["triangles"]){for(auto& i:f)i=i.get<int>()+4;bad["part"]["triangles"].push_back(f);}auto multiple=inspect(bad);check(multiple.report.at("quality").at("closed_oriented_surface")==true&&multiple.report.at("geometry_gate_passed")==false,"multiple individually closed components blocked");
+    std::cout<<checks<<" mesh exchange checks passed\n";return 0;
+}catch(const std::exception& e){std::cerr<<"Check "<<checks<<": "<<e.what()<<'\n';return 1;}}

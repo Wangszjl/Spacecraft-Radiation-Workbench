@@ -1,0 +1,8 @@
+{
+  "schema": "spacerad.runtime/1",
+  "worker": "bin/scdat_radiation_worker.exe",
+  "data_root": "data",
+  "library_directories": [
+    "bin"
+  ]
+}

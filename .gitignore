@@ -1,0 +1,8 @@
+/build*/
+/install*/
+/dist*/
+/reports/
+CMakeUserPresets.json
+runtime.local.json
+__pycache__/
+.superpowers/

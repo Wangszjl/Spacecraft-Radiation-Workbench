@@ -1,0 +1,515 @@
+{
+  "schema": "spacerad.source-import/1",
+  "source_revision_basis": "working-tree snapshot 2026-10-30, imported existing radiation module only",
+  "licensing_status": "ownership and redistribution audit pending before public release",
+  "files": [
+    {
+      "source": "TKMaster/radiation/AnalyticShapes.cpp",
+      "destination": "engine/AnalyticShapes.cpp",
+      "sha256": "f900cdd481af9358d353c502d8732d36e9e3c49c119da57fd8319117e4db2917",
+      "derived_sha256": "e3083951d3253cad2ea1ae12e60852accec53d7c0acf6f48e07964fcdd981f90"
+    },
+    {
+      "source": "TKMaster/radiation/Geometry.cpp",
+      "destination": "engine/Geometry.cpp",
+      "sha256": "e03de2a97877e273f1d00e1a93000e96fce75f1b31e77d6eef063c00eab64d9f",
+      "derived_sha256": "4a6e87b6dd2f46debec6eb1bb14d02602a3b494171574918470503464dd20c50"
+    },
+    {
+      "source": "TKMaster/radiation/Geometry.h",
+      "destination": "engine/Geometry.h",
+      "sha256": "9c3e7a736fe0cd0e6a3862a653cef910e191682be2c972c919c95be0ed0dea5b",
+      "derived_sha256": "c4bbbb0c42a42b0a0f3dd2cd38f0cca151657fc56625e59d69a3e2cb81e76e7e"
+    },
+    {
+      "source": "TKMaster/radiation/Instances.cpp",
+      "destination": "engine/Instances.cpp",
+      "sha256": "24867fac2f5c8aa33ad7785bb6d1951fbaa415ada21676be2531ea58b59ccbaa",
+      "derived_sha256": "8e6238ce45c020f6fb93213a23dfb4b000e485179429fb30ec0ed36ca727a6fa"
+    },
+    {
+      "source": "TKMaster/radiation/Instances.h",
+      "destination": "engine/Instances.h",
+      "sha256": "cbcd090d55db0baccc210843b7b33c4940ee7ab9c0062d2109883d1cd4e42bb9",
+      "derived_sha256": "4d117366c44d3f901c2bc536c6b33e1ec7f68cfc854e4399c0d92d818a6398b5"
+    },
+    {
+      "source": "TKMaster/radiation/Materials.cpp",
+      "destination": "engine/Materials.cpp",
+      "sha256": "35734f7a2bc2668ea8fe334eca6204f6612fe7f4c05f71888f3abf16e2a585b6",
+      "derived_sha256": "d88478ba2a40abf99bcdbc7a8fc76c67582be1160e616cf7b8c6aec83e34626d"
+    },
+    {
+      "source": "TKMaster/radiation/Materials.h",
+      "destination": "engine/Materials.h",
+      "sha256": "3a28e94ea0968d856edbc681d494529ac01fe294ac7ecfda77f7dc159adb96d8",
+      "derived_sha256": "a45f3c28a6a7a0ca913121466485a861985751bcba4927beacc04382a61905ed"
+    },
+    {
+      "source": "TKMaster/radiation/MeshMaterialShells.cpp",
+      "destination": "engine/MeshMaterialShells.cpp",
+      "sha256": "99df42e6f6f41348f7059357375f616d73623d5bebedc9979d8b129b23a40be9",
+      "derived_sha256": "d03679c65bda515b1f7c05275766953c953b17f1c21ae2debfe183b6dcc7a73f"
+    },
+    {
+      "source": "TKMaster/radiation/MeshMaterialShells.h",
+      "destination": "engine/MeshMaterialShells.h",
+      "sha256": "2260d2decb9d2a253b4097041a37c45cd5d98164070220d226ec886e8ddda5dd",
+      "derived_sha256": "c72aa80f679fcd9fc3815076037103b450d116de8ba65a5ebc367b705a9ea01f"
+    },
+    {
+      "source": "TKMaster/radiation/MeshSpatialAudit.cpp",
+      "destination": "engine/MeshSpatialAudit.cpp",
+      "sha256": "a3bb53a5e9d975f76fef3bddf81c167b6a06b30823d5ba60587a491e62617bd7",
+      "derived_sha256": "9e10c10ad570ed4f238642d18db4e3ec9b8527dd93420274c6f16ce7ee37c75e"
+    },
+    {
+      "source": "TKMaster/radiation/MeshSpatialAudit.h",
+      "destination": "engine/MeshSpatialAudit.h",
+      "sha256": "554f28387a3df2bd7aec204a1cd49eb298741ff7abe81bd734519cadf91ebf33",
+      "derived_sha256": "591df693b772a6bcb0f289e1f3714f86a50fc124e9eb1b35ae3014c02709de3e"
+    },
+    {
+      "source": "TKMaster/radiation/PreviewMeshQuality.cpp",
+      "destination": "engine/PreviewMeshQuality.cpp",
+      "sha256": "031eadcd091bd45e13a264a77e5dac58d03855d836f38f0917d8d58caff4e484",
+      "derived_sha256": "55fc97c6e1d3593ac14cce1d111f15e66e135fd77df543f4863f6faf8d4bdb76"
+    },
+    {
+      "source": "TKMaster/radiation/PreviewMeshQuality.h",
+      "destination": "engine/PreviewMeshQuality.h",
+      "sha256": "2121dc0e0f6cf6c6859d81aa2c04a086095f311b5115a59c48e8f1a8b2c8c244",
+      "derived_sha256": "874a9cff2194aaac793e9902e8b72048d3152b2564337ebe342c1ef0d2053450"
+    },
+    {
+      "source": "TKMaster/radiation/RadiationProject.cpp",
+      "destination": "engine/RadiationProject.cpp",
+      "sha256": "1688d4fd6539c1eba86c7247ce9ebf28d8b586fa52155b1c9c2814ccda3f07bb",
+      "derived_sha256": "fb7b012264e994d4bc9a9306880382af6a36fcfa1af69738387ef6c044ba8fb0"
+    },
+    {
+      "source": "TKMaster/radiation/RadiationProject.h",
+      "destination": "include/spacerad/engine/RadiationProject.h",
+      "sha256": "01f9a025de65f74735fbdd704417a32f0b081d22b636aa4f227381db775b6dc4",
+      "derived_sha256": "68b8e7bfa31f3ec0c621034627d9f3f0f84df382b6e3918764f3336a982d1928"
+    },
+    {
+      "source": "TKMaster/radiation/RadiationWorker.cpp",
+      "destination": "engine/RadiationWorker.cpp",
+      "sha256": "9966ddfa812959f321aebcf56d582d0e8460ae10592992dc3a9bfc11b737453f",
+      "derived_sha256": "5987fd0374e32bacac1acd956fc387c846ed9f9dc80e3af5d1748e55efb57d06"
+    },
+    {
+      "source": "TKMaster/radiation/Voxels.cpp",
+      "destination": "engine/Voxels.cpp",
+      "sha256": "951e51d5f5f9c1c35be9220354fbde5b79653432a1e99e7717b3c6b757f74f4b",
+      "derived_sha256": "1dfd887395d91df32917154a4fba6ad1473acd41b79cd5225c08d2c8456a8762"
+    },
+    {
+      "source": "TKMaster/radiation/Voxels.h",
+      "destination": "engine/Voxels.h",
+      "sha256": "13da3401d962d5fd7bb0ee63de9090ab13a445aa7a0b7ff400558d71ecc96425",
+      "derived_sha256": "d255187c7006f62d96cf8add18108a9b121fb5e870f07453dd3d5bf31aafe684"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/BatchArchive.cpp",
+      "destination": "engine/runtime/BatchArchive.cpp",
+      "sha256": "9184d3df7fd6454d3492b31f42ae1d3ef92153fdc5cdae690242427039cbd5d4",
+      "derived_sha256": "e88c698557c637adf0e8a797173e70661c1def714a8592a2e16db3f2207dff31"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/BatchArchive.h",
+      "destination": "engine/runtime/BatchArchive.h",
+      "sha256": "2d7690babcbfa746788df6ea5eafdda94d2fb96950c04b2ef1bf90cff76de945",
+      "derived_sha256": "ebc5a74f6279613de5b8f15bfee43df4ae27349ceb5b7aec15658c9e90b347da"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/BatchRunner.cpp",
+      "destination": "engine/runtime/BatchRunner.cpp",
+      "sha256": "a3c69ebefe2ca794b56673bb6b048030caa37a13d973f6b02ccb1c0367896ea4",
+      "derived_sha256": "0e42ffdb479fb3cd46fbd426ec5b19dd969a8d7b2f1adb4537cb8c1820dc1bb1"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/BatchRunner.h",
+      "destination": "engine/runtime/BatchRunner.h",
+      "sha256": "e1dda42145bc9945902f73cb1e7f8f9f1390a7cc96debcbdbdfe615fbf3aabda",
+      "derived_sha256": "44d9b334d591e52fab03fef6480c8fd87ca65ead797f99aca38e49573015fa09"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/BatchStatistics.cpp",
+      "destination": "engine/runtime/BatchStatistics.cpp",
+      "sha256": "7cfa6b5b565f2f847c7f4c3656433bcdbb6c8d445bdf8964115e3b3b7fb28e9a",
+      "derived_sha256": "e3889097025bf380f851df8ec5a4ae243112bb2cda502f737eaf6c696302cff7"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/BatchStatistics.h",
+      "destination": "engine/runtime/BatchStatistics.h",
+      "sha256": "d5433fabb89ecd4a732b2e0dd779129260a9fd9cb7e2b3317749d8a04569d79f",
+      "derived_sha256": "dc610e58d098d669c09ec868c39cc73575002d1ac3504e67bd2d8a50244cf1c1"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/BrepPairReview.cpp",
+      "destination": "engine/runtime/BrepPairReview.cpp",
+      "sha256": "2a259d5b4ed3dfd3456918ba50fd87637adea6028c6d9a9451ae070dc2e0aa4b",
+      "derived_sha256": "d8580ac4a7904c4ebc1a254cef651b9239497d33af2f4f4bf89f6c012d2366dd"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/BrepWitnessReview.cpp",
+      "destination": "engine/runtime/BrepWitnessReview.cpp",
+      "sha256": "7bf33ae5ebf1232adfc0277539cfb7bdae74788ab20edd301c1b6fe4f01eb36e",
+      "derived_sha256": "1ba237ddc80879e0a5fb58d8ebcc2d17651160468f6eae90ac6e1c3f96ea25ce"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ConvexSeparation.cpp",
+      "destination": "engine/runtime/ConvexSeparation.cpp",
+      "sha256": "0fe3fc224c228f8622232be75e3144e6fc3a5d9458a2d60e755296f882656e4f",
+      "derived_sha256": "144bad10134014b87c56303536de909674cf0c1147bfb857a690438bd76290ed"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ConvexSeparation.h",
+      "destination": "engine/runtime/ConvexSeparation.h",
+      "sha256": "17aad979a199ac345ef6ed88e6bff96787a7ebbbe6f8ddb9dc36e53b4f9f4b2d",
+      "derived_sha256": "56dde6d80cf9a7124c5bf7dcc46ec6bd6e9a15d10d2a11075d6f582db8350f77"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/EnvironmentImport.cpp",
+      "destination": "engine/runtime/EnvironmentImport.cpp",
+      "sha256": "247d692b0f2ed7917c0b01ae96a38429b1a4d1e0d41d499c99e8604ff0691827",
+      "derived_sha256": "21df044ed42f5278aea2855095b9b5826b813053b7692ac7f5fec30c7b11193d"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/EnvironmentImport.h",
+      "destination": "engine/runtime/EnvironmentImport.h",
+      "sha256": "8b19323ab7497f47f94eecc7b476a476d049d32358ee896d89af3621be0bf54b",
+      "derived_sha256": "a314623979311ebb9bfe27fb8a42fcf43f6418d629e82cf4cdc2780ec72ea2f5"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/GeometryExchange.cpp",
+      "destination": "engine/runtime/GeometryExchange.cpp",
+      "sha256": "27e6e81ecf54dd079366326ec0d1a5b519a19867fcad4721eb797e21197a40ef",
+      "derived_sha256": "d395699315275ac7c9bb0aa56765dad60bce9597df110b7c04c3439bd66bc365"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/GeometryExchange.h",
+      "destination": "engine/runtime/GeometryExchange.h",
+      "sha256": "a22e924b8041789bf70f8ae23163da26574c32ec7436daa510b3cdec1af99acd",
+      "derived_sha256": "ac2782cbbfec81b5024ce6d470d6d5b50751148b0ca765aa2c0d10358b434c27"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/M1Audit.cpp",
+      "destination": "engine/runtime/M1Audit.cpp",
+      "sha256": "83163f92e33af504ccf9288722a24389d3a169a102d55798c5c876c4160e0297",
+      "derived_sha256": "079c363c7b8340842c66e2ad429a6cc8847d80755f06032163cf583c698ed0c8"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/M1Audit.h",
+      "destination": "engine/runtime/M1Audit.h",
+      "sha256": "cda9f7772d5db20ac56e7db934224d0a3e82d89add16b11d995c6af4f56adbd1",
+      "derived_sha256": "e9d5c011898b89c4e9ef76cb42f6dc04c4d494b45a9488c14ddff783c76cdda2"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/M1Package.cpp",
+      "destination": "engine/runtime/M1Package.cpp",
+      "sha256": "012ebc752c2c9004c3183fd56a43c56333334ddfa2c21054aa02b7a60ee060db",
+      "derived_sha256": "bb62e95875b7fd825fd6a17ec8d871ba99580639bba76d3b2fea4ac5f6323819"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/M1Package.h",
+      "destination": "engine/runtime/M1Package.h",
+      "sha256": "1764536b2c7699f11225e643852d702241ac2ac8ee9ba66ed12ade2bd67bccae",
+      "derived_sha256": "f1b027d4dd85b3ddad64a91c4ed275e52e140fcad4c18dc153f9a90c2487a29f"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/MeshExperimentJob.cpp",
+      "destination": "engine/runtime/MeshExperimentJob.cpp",
+      "sha256": "d3b94d59838ec2523e7acce9afe8be01eee5d844f59f71bf2a5db4ab96e4dd57",
+      "derived_sha256": "17f170fbcee7329a8c0442d8be43b1699edb8bc021e4d2500aef3e46c4d8bbb3"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/MeshExperimentJob.h",
+      "destination": "engine/runtime/MeshExperimentJob.h",
+      "sha256": "bdcfdd70b3041caa0645620a7209a4d844a4934d2e8a49dda4789cec28ff55f0",
+      "derived_sha256": "91854402867a415b9fd560577e354d5d173d7ae21868b651fc2886eade889fbb"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/MeshExperimentStudy.cpp",
+      "destination": "engine/runtime/MeshExperimentStudy.cpp",
+      "sha256": "1228783f606482fd2acdd69906f0d67781c3a703b3c71ddcf8c821b34ed044db",
+      "derived_sha256": "2d3b0eba8ccc50b548235c6be6a5e1203d1073d32f6706b633dc925d8e6a714c"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/MeshExperimentStudy.h",
+      "destination": "engine/runtime/MeshExperimentStudy.h",
+      "sha256": "c5f0309aec09b51480a6962235c51a2ddec6356d28be3d201effc3d0ab07e0c9",
+      "derived_sha256": "e29f1ea677163cfc97c88216d92f899054f2e47aaab0b19c5c142c2cbeb9491c"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/NonconvexAssembly.cpp",
+      "destination": "engine/runtime/NonconvexAssembly.cpp",
+      "sha256": "ab0321c8aa2d626c4803ddfa78e15dc6c975851aa58fb3e63b40b9debb116ccb",
+      "derived_sha256": "8d4200455502cf41a2e073741dadab8559fa77a2f2d508ea837ebe798259868c"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/NonconvexAssembly.h",
+      "destination": "engine/runtime/NonconvexAssembly.h",
+      "sha256": "b1c9947e716eb825a5b3043d056fca338ecbae51a72083c48ee2d9bb66bd9db4",
+      "derived_sha256": "db0a6c6edff72c14d5e0e9202c221f555394686240a11db31c60428627ae3598"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ProjectFile.cpp",
+      "destination": "engine/runtime/ProjectFile.cpp",
+      "sha256": "c64167bee1188294296dd85b447b16ab48a932c98822b24caa627ed69399d7dd",
+      "derived_sha256": "619838e5b43dc1dedc4efa1513842c1418e35c89326c7564e5e5d3329d3fe090"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ProjectFile.h",
+      "destination": "engine/runtime/ProjectFile.h",
+      "sha256": "fd2851e328673ecacf122217a550f9f89fe3b1835e599a03304690305281b819",
+      "derived_sha256": "fc9cb111dc7dd5aa12e9a8711fb2040bce862eada32c1f42af3f4c521cc3a7d0"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/RadiationRuntime.cpp",
+      "destination": "engine/runtime/RadiationRuntime.cpp",
+      "sha256": "c254dcf80a0bf44c64498363e0d52e243a396e85a64803cb3cdc6cd747e201b6",
+      "derived_sha256": "b627fd53403d5f15a85d6b9c9d78e620b4d34feb8f8feb46fb1d7c8923c9910b"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/RadiationRuntime.h",
+      "destination": "engine/runtime/RadiationRuntime.h",
+      "sha256": "774274adb9e995d83ef01eed623430d6f02693bc4aae77b541404e30e5f82ba9",
+      "derived_sha256": "d085bc76f309d470b82807446a63e0ffd856b1d4d8e59c2541e5a60e82d1efd5"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ReportHtml.cpp",
+      "destination": "engine/runtime/ReportHtml.cpp",
+      "sha256": "094e86e6342775f2928719317bf0dec2beaec9c753287f16d7624444f1bf1529",
+      "derived_sha256": "da454119d9c7699f0117addbd3a2dc9751d752780d96674d8ce96a7c670d6a58"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ReportHtml.h",
+      "destination": "engine/runtime/ReportHtml.h",
+      "sha256": "5423df789177f220fea033e40fe1feefe80186268474a6c20d62e17e5517ed38",
+      "derived_sha256": "cceaf4be6ff9ec0aa80da99b998344da02d57764f69410bb881e07e42c1913df"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ReproReport.cpp",
+      "destination": "engine/runtime/ReproReport.cpp",
+      "sha256": "9eec4265bbd9a1b557ba70d409878941426c89a8ef2966ca8e637218eec6a37b",
+      "derived_sha256": "38ba8db2926fe287c05c7dd75d24be58eaf514def565389944d3f93fe2cdc0cd"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ReproReport.h",
+      "destination": "engine/runtime/ReproReport.h",
+      "sha256": "e4604b3143fa2907d08f88aadead80acd421ffe7856a66949e92d7cc2d2fc3bf",
+      "derived_sha256": "42a8611f1a9a4588bd92702efd249d2976aa81a6b3ea7d2c42552decf52bae4e"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ResponseCache.cpp",
+      "destination": "engine/runtime/ResponseCache.cpp",
+      "sha256": "ef733c9cda4124f4cedd91a4d8aae39d147097c4687b5e15c3b13f94cee2ee73",
+      "derived_sha256": "5210f42d146d0df0e8ef446d051ad6990440c78def7ae277f8bbb98cd5a7958c"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ResponseCache.h",
+      "destination": "engine/runtime/ResponseCache.h",
+      "sha256": "748d1b64407deebf979a3cadc75c5dfb51c1c2987ad040659b006d7ac1c733d2",
+      "derived_sha256": "8edd02ec44fe2183a322f176380f90b3dafb5ea72683632ba3d15ffe9fc63e81"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ResponseCacheRunner.cpp",
+      "destination": "engine/runtime/ResponseCacheRunner.cpp",
+      "sha256": "3a87d03886ea95ed4c05929d90b7392ec54f9c0248bf946f3be2745a981b9625",
+      "derived_sha256": "fe959522081c8b3df12399957f5827d82420fae04ee4dbbbaf78e86a00fb2aa9"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ResponseCacheRunner.h",
+      "destination": "engine/runtime/ResponseCacheRunner.h",
+      "sha256": "f3bd96c2b959545806c89c96aaea7b7afa177e5a508d2fc5e77daf9e74ddc9f5",
+      "derived_sha256": "c4d6b57607127b7e4bbc92bbdb67d0c3d1c8b80d30aecd3974eb538cd8e7c41d"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ResponseMatrix.cpp",
+      "destination": "engine/runtime/ResponseMatrix.cpp",
+      "sha256": "f6669969793d091689e030be5369ab601bd808b61189ecdc982d999193297929",
+      "derived_sha256": "f583e2b345249b739c614040c1fd1f37979befe39ae1053ea0856ffcd125ddf4"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ResponseMatrix.h",
+      "destination": "engine/runtime/ResponseMatrix.h",
+      "sha256": "9bd5780b3dfae6f2acd5796bdd7189ee64818231cfbe8dbbee075e0a15325416",
+      "derived_sha256": "30446cb59e5ba37ab0fa9c3669669abff6cca62f0fb3c098b94f62e69e92a8dd"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ShieldingScan.cpp",
+      "destination": "engine/runtime/ShieldingScan.cpp",
+      "sha256": "44bc94d6892538cf78c3e42afd035c5df2e710b5a891cb383e48edcb7318896c",
+      "derived_sha256": "3276a95076e5a146d36739a730a8b94501888aafea7f47c07fe8aaf1684657ae"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ShieldingScan.h",
+      "destination": "engine/runtime/ShieldingScan.h",
+      "sha256": "bc1ea61a3954efd59057afdf56e48bbe455ab6a196853d7e00db3872f18028b4",
+      "derived_sha256": "f39b730b3802012316fae5b97a7f9c062d8ba48a71acafc3f413458724173169"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ShieldingScanRunner.cpp",
+      "destination": "engine/runtime/ShieldingScanRunner.cpp",
+      "sha256": "4810e2c9bd54db301ffd63b97b44f22c0bc93bec19a10c547578fcb78f943427",
+      "derived_sha256": "df319630fefdb2cbbc6628ddfc662e0351f93379b712ad72f83b95674ebfefd4"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ShieldingScanRunner.h",
+      "destination": "engine/runtime/ShieldingScanRunner.h",
+      "sha256": "77a27d98ddd987184e8e64d1800c6dcbf6f100de01ba46791239da230c1409f7",
+      "derived_sha256": "3bcdd25ae6664cf5bb524cd889650946d23d85655990999f22d7f9ed7c58d63c"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/StarFanSeparation.cpp",
+      "destination": "engine/runtime/StarFanSeparation.cpp",
+      "sha256": "ed0a97bccd7bd1c4d745dd62b3a4a30130764cee64277f2443bf96a7d20ead40",
+      "derived_sha256": "c2c30756c1f11392f29cf9bebad2e42beeda02556c7ed4917708ec1f59fc47ef"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/StarFanSeparation.h",
+      "destination": "engine/runtime/StarFanSeparation.h",
+      "sha256": "75b5dd08162e7ee9beded4138e4f89d71c3582bf2f0e914ef4fcefddc733fc33",
+      "derived_sha256": "dfa0a56ac45a6e0ee293df4b176ffdfafdd650ecd76b85fadd89344ba951cc40"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/StepConversionReview.cpp",
+      "destination": "engine/runtime/StepConversionReview.cpp",
+      "sha256": "09a72bc5d2380a69485f8e12e51d0d30160833511915d09715763edfacbb6656",
+      "derived_sha256": "855dd5d533561f7e01dce460779d4933a4e94335072491d2d528ae8eb3eb1186"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/StepConversionReview.h",
+      "destination": "engine/runtime/StepConversionReview.h",
+      "sha256": "eb389699f5b5b2cf9bb10ca6b8f84bb94ba23295129a6eb7e6e45912fb4897a2",
+      "derived_sha256": "52c26bc2d1796095c66ae13e841c76fc40bdb772ba1d6220e2cec202a75f991e"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/StepMeshExperiment.cpp",
+      "destination": "engine/runtime/StepMeshExperiment.cpp",
+      "sha256": "ee4429fef9ebaaa8d517f364b896f77e4867daec2ad61f1056dbb028d6a85826",
+      "derived_sha256": "c5c57d8cbc69865e4b43beabdef30897d8e56a1ffc8e2f1731d2a7989d8daf26"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/TriangleMeshExchange.cpp",
+      "destination": "engine/runtime/TriangleMeshExchange.cpp",
+      "sha256": "2c5943976185d5944c1969d9194f46fd5e1d2d7e46010b468808556fd72d670d",
+      "derived_sha256": "5cedae75e48f240fc6377cfa28d210084f026350a63ff71370691c63ab169455"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/TriangleMeshExchange.h",
+      "destination": "engine/runtime/TriangleMeshExchange.h",
+      "sha256": "de6711c345f171825ee76d7fb7c22a5e04962f7ef7042c6869bcae945ace45ac",
+      "derived_sha256": "0600322dec93c99d65dfa718ef5b046f49d53e24fc706e6af8c21155850f1fb1"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ViewProperties.cpp",
+      "destination": "engine/runtime/ViewProperties.cpp",
+      "sha256": "279a4a436bf5d309af0e4a30e5b16aec000cdd10a983a732c6abe7eca5d5bf78",
+      "derived_sha256": "e17bbc8fde258b8a38e1a4d7c6e8248c55533c4b8be0cf4c740173ab621fb78f"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/ViewProperties.h",
+      "destination": "engine/runtime/ViewProperties.h",
+      "sha256": "aa6e1f6661777f7ce90ea633d0d74669b48fc9a5ffe73fbfd78c3c12e39716fe",
+      "derived_sha256": "3a9064cdefaefedb8fa323e80eeeee69c3e23bfdbe170cf4556d11bdcdeea52b"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/VoxelExport.cpp",
+      "destination": "engine/runtime/VoxelExport.cpp",
+      "sha256": "4a764a408023ecfcd8f1a420e41ee34dafe184b4fd5f2de36996a15f9031e336",
+      "derived_sha256": "9335767156b6b787bbc959c2e357af71e91bfead369c30fbbd7b5f4c32bbd065"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/VoxelExport.h",
+      "destination": "engine/runtime/VoxelExport.h",
+      "sha256": "d26faf8db4ea8861566ea4087ce1f06e909026ae5bab9f88d4ed04e2454ce153",
+      "derived_sha256": "5965e180c414003eff777bad7cf6ba0ed49861b49dc457951363cdc0523a9e44"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/VoxelStatistics.cpp",
+      "destination": "engine/runtime/VoxelStatistics.cpp",
+      "sha256": "dbf3d299021f29b78598fe5417c3a7ccddf71c2644d38e9fe4d807e0c31efa1a",
+      "derived_sha256": "f883a5d2ca709cb9dc5caaf5abdbc83df3c5c1f8e592bea7f40ee3e2ea509ec5"
+    },
+    {
+      "source": "TKMaster/radiation/runtime/VoxelStatistics.h",
+      "destination": "engine/runtime/VoxelStatistics.h",
+      "sha256": "ac05a10a3b2dba080009e226899043c663ec7537d7bc1823a4a76b735e761167",
+      "derived_sha256": "a70e14303f3324055f5b372a159c79a3b70ab032fde6add667def3793e25a552"
+    },
+    {
+      "source": "TKMaster/radiation/transport/DetectorConstruction.cpp",
+      "destination": "engine/transport/DetectorConstruction.cpp",
+      "sha256": "03b912a0d9893059618bd0073189b0aca967c08ae45f67a7138831ad79c0986e",
+      "derived_sha256": "48b8748d69333dd066c85889b6a835fbcefe0b4d5457462e0341739e0b22b13d"
+    },
+    {
+      "source": "TKMaster/radiation/transport/Materials.cpp",
+      "destination": "engine/transport/Materials.cpp",
+      "sha256": "55fcc47d611829d1fb791a30b56cc3dda09b1bf67f1f632b75d0a87b2aaaaded",
+      "derived_sha256": "81ad0d62120214662ff3241de4aa85973811ae97380a7723f7c8443531d717e3"
+    },
+    {
+      "source": "TKMaster/radiation/transport/Materials.h",
+      "destination": "engine/transport/Materials.h",
+      "sha256": "32f773cf42d8f46a329adbdbb8f062aaa7e832c228811e97d7164090373fbcdd",
+      "derived_sha256": "cdd66baf8b3daabdc7f84891047a01ac4952bb645cdd75b2dd304494d01adb33"
+    },
+    {
+      "source": "TKMaster/radiation/transport/MeshExperimentTransport.cpp",
+      "destination": "engine/transport/MeshExperimentTransport.cpp",
+      "sha256": "02035534abdbac6769374749899408db361c4f4096b350c145cde1e24274ff7f",
+      "derived_sha256": "d5055986939caf6a3ed0d24caf040156974e795a3d9e9779d4d1c24dd1df4dd0"
+    },
+    {
+      "source": "TKMaster/radiation/transport/MeshExperimentTransport.h",
+      "destination": "engine/transport/MeshExperimentTransport.h",
+      "sha256": "0165ed6b56874b5e39e0bbb5e99e5995a0521857393423ed476281aa8255eecd",
+      "derived_sha256": "39c1331bf92cf7ab85111ee71d68ad8848ecb89652ce1ba5a5e2d1c41965eaa9"
+    },
+    {
+      "source": "TKMaster/radiation/transport/PhysicsConfiguration.cpp",
+      "destination": "engine/transport/PhysicsConfiguration.cpp",
+      "sha256": "ea3b30319dc5fd92eca272d41aac5c3dbb1c55c5b4abc9c224c5d00d8b7870a0",
+      "derived_sha256": "9e08948d103c3d01299cd1c0f76fd99a4337d88ff8b30d4801444d5e1f54dcc6"
+    },
+    {
+      "source": "TKMaster/radiation/transport/PrimaryGenerator.cpp",
+      "destination": "engine/transport/PrimaryGenerator.cpp",
+      "sha256": "bac479dfe9e162567b114ce00c72c68029a4facdbddf90a1fa930701a22d861c",
+      "derived_sha256": "93173380e9dffb2a033e0af505d8e8bf980b101e39110dc7a5a52da23bf41692"
+    },
+    {
+      "source": "TKMaster/radiation/transport/ScoreOutput.cpp",
+      "destination": "engine/transport/ScoreOutput.cpp",
+      "sha256": "52990a9e3215e2d0c72a81599209f357dedc6f4f82203e8f71001c35404ce839",
+      "derived_sha256": "22c4ab19d041e38790bf6e4bfc9823e913728f0d1659ad29ca30f02f2d4b40c8"
+    },
+    {
+      "source": "TKMaster/radiation/transport/ScoringActions.cpp",
+      "destination": "engine/transport/ScoringActions.cpp",
+      "sha256": "f76a370ea6e2db06c8ec563f13a8102eec126875c49bb454bbd62d281b52c39f",
+      "derived_sha256": "da75f3c5997f4eca3ebf862cef67ddc20e31533554239669e076925d0f1184c3"
+    },
+    {
+      "source": "TKMaster/radiation/transport/Transport.cpp",
+      "destination": "engine/transport/Transport.cpp",
+      "sha256": "c33d8c6e3c42a53f32be391a2a56183dd9aa21a4c88b6d8f452637c593df692b",
+      "derived_sha256": "cee400ece9520d31e65c2b588e0f6a6ccda430f170d95dac7c3fd859a3c93391"
+    },
+    {
+      "source": "TKMaster/radiation/transport/TransportState.h",
+      "destination": "engine/transport/TransportState.h",
+      "sha256": "6fdfc09607c5f5cca99e6f7ccdb4e4255bf484c3cfa63f542259b4041dd04353",
+      "derived_sha256": "4a82dcd21355c4713ff293f0fdfd51c2abafa490846b759e4611d8d753a64fcc"
+    }
+  ],
+  "transformations": [
+    "Text-normalized C++ namespace scdat::radiation -> spacerad::engine; JSON schema identifiers unchanged",
+    "Move RadiationProject.h declaration to include/spacerad/engine; private forwarding header retained; no algorithm edits"
+  ]
+}
