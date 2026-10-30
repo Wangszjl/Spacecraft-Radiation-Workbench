@@ -2,6 +2,15 @@
 
 Spacecraft Radiation Workbench is an independent C++/Qt desktop application and reusable analysis UI for spacecraft radiation studies. Its standalone shell and an embedding Qt host use the same `spacerad::WorkbenchWidget` and `spacerad::AnalysisService`. Geant4 runs in a separate `scdat_radiation_worker` process; the GUI host does not link Geant4.
 
+Source repository: [Wangszjl/Spacecraft-Radiation-Workbench](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench), published on 2026-10-31.
+
+```powershell
+git clone https://github.com/Wangszjl/Spacecraft-Radiation-Workbench.git
+cd Spacecraft-Radiation-Workbench
+```
+
+This repository contains source, tests, synthetic examples and documentation. Local runtime bundles, build/install directories, acceptance reports/screenshots, SDKs and Geant4 datasets are not uploaded. Links into `dist/` or `reports/` in the local acceptance documents refer to workstation artifacts; they are not GitHub release downloads. No binary release has been published.
+
 Local version 0.1.2 adds differential spectrum editing, curve preview, normalization summaries and explicit flux/fluence conversion to the component authoring workflow. Verification includes 35/35 CTests, 41 environment-authoring checks, 31 native environment UI checks repeated with the packaged Worker, 27 component-authoring regression checks, installed SDK consumption and actual TKMaster integration. Equivalent flux/fluence examples produce identical seeded target doses and raw moments. See [environment acceptance](docs/ENVIRONMENT_ACCEPTANCE.md), [component authoring](docs/AUTHORING_ACCEPTANCE.md) and [foundation evidence](docs/BOOTSTRAP_ACCEPTANCE.md). This is a local research application; public-release and independent physical validation are not complete.
 
 For this workstation, launch `dist/SpaceRad-0.1.2-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them.
@@ -33,4 +42,4 @@ An installed CMake package exports `SpaceRad::Widgets`, `SpaceRad::Services`, an
 
 ## Release status
 
-Code ownership and third-party license review, data redistribution rights, clean-machine install/runtime acceptance, CI, Linux support, independent scientific verification, and public GitHub release remain open. No license or redistribution permission is asserted. The local engineering evidence establishes the recorded scope only; it does not establish scientific or clean-machine acceptance. See [the readiness checklist](docs/RELEASE_READINESS.md).
+The public source repository is available. Code ownership and third-party license review, data redistribution rights, clean-machine install/runtime acceptance, CI, Linux support, independent scientific verification, and packaged binary releases remain open. The project license has not been selected; no license or redistribution permission is asserted. The local engineering evidence establishes the recorded scope only; it does not establish scientific or clean-machine acceptance. See [the readiness checklist](docs/RELEASE_READINESS.md).
