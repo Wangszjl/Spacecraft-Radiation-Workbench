@@ -7,3 +7,11 @@ dependencies:
   - ninja=1.12
   - geant4=11.4.3=noqt_*
   - qt6-main=6.8.3
+  # Geant4's exported CMake config needs headers/import libraries as well as
+  # the split runtime packages pulled in by its run dependencies.
+  - clhep=2.4.7.2
+  - expat=2.8.5
+  - freetype
+  - hdf5
+  - xerces-c
+  - zlib
