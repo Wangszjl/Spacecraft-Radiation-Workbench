@@ -6,12 +6,14 @@ on:
     paths:
       - 'engine/**'
       - 'src/**'
+      - 'app/**'
       - 'include/**'
       - 'tests/**'
       - 'examples/projects/**'
       - 'ci/worker-linux.yml'
       - 'tools/check_worker_runtime.py'
       - 'tools/prepare_worker_runtime.py'
+      - 'tools/check_cli_runtime.py'
       - 'CMakeLists.txt'
       - 'cmake/**'
       - '.github/workflows/worker-ci.yml'
@@ -19,12 +21,14 @@ on:
     paths:
       - 'engine/**'
       - 'src/**'
+      - 'app/**'
       - 'include/**'
       - 'tests/**'
       - 'examples/projects/**'
       - 'ci/worker-linux.yml'
       - 'tools/check_worker_runtime.py'
       - 'tools/prepare_worker_runtime.py'
+      - 'tools/check_cli_runtime.py'
       - 'CMakeLists.txt'
       - 'cmake/**'
       - '.github/workflows/worker-ci.yml'
@@ -87,6 +91,12 @@ jobs:
           --runtime build/worker-runtime/runtime.json
           --service-test build/worker-ci/test_service_runtime
           --output-dir build/worker-acceptance
+      - name: Run public CLI integration acceptance
+        run: >-
+          python tools/check_cli_runtime.py
+          --cli build/worker-ci/spacerad_cli
+          --runtime build/worker-runtime/runtime.json
+          --output-dir build/cli-acceptance
       - name: Preserve logs and numerical evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -102,5 +112,7 @@ jobs:
             build/worker-runtime/*.json
             build/worker-acceptance/**/*.json
             build/worker-acceptance/**/*.log
+            build/cli-acceptance/**/*.json
+            build/cli-acceptance/**/*.log
           if-no-files-found: warn
           retention-days: 14

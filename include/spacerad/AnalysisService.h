@@ -7,6 +7,8 @@
 #include <memory>
 namespace spacerad {
 struct RuntimeOptions { QString worker,dataRoot; QStringList libraryDirectories; };
+// Relative paths resolve from the runtime file, without changing host state.
+RuntimeOptions loadRuntimeFile(const QString& path);
 class AnalysisService final : public QObject {
  Q_OBJECT
 public:
