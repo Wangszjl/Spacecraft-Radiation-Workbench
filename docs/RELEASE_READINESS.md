@@ -16,6 +16,7 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 
 - [x] Basic project creation and analytic component add/edit/remove dialogs; model/tree/result selection and 3D focus. Version 0.1.1: 34/34 CTests, 27 native workflow checks and real TKMaster revalidation. See [authoring acceptance](AUTHORING_ACCEPTANCE.md).
 - [x] Editable manual differential spectra, linear/bin-constant previews, normalization/sampling shares, explicit flux/fluence conversion and portable synthetic two-particle examples. Version 0.1.2: 35/35 CTests, 31 native workflow checks and actual TKMaster environment verification. See [environment acceptance](ENVIRONMENT_ACCEPTANCE.md).
+- [x] Shared-service CLI and Qt Core runtime loading: project/runtime checks, NDJSON progress, accepted-result summaries, timeout/interruption and stable exits. Version 0.1.3: 37 CTests; 49 Windows / 53 Linux real CLI checks; desktop and actual host regressions passed. [Acceptance](CLI_ACCEPTANCE.md).
 - [ ] Extended spacecraft model import/assembly workflows, placement tools and full CAD interaction.
 - [ ] Reference environment/model execution and qualified environment examples; current first UI uses synthetic or externally supplied spectra.
 - [ ] Calibrated device DDD/SEE workflows and response data.

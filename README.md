@@ -14,15 +14,23 @@ cd Spacecraft-Radiation-Workbench
 
 This repository contains source, tests, synthetic examples and documentation. Local runtime bundles, build/install directories, acceptance reports/screenshots, SDKs and Geant4 datasets are not uploaded. Links into `dist/` or `reports/` in the local acceptance documents refer to workstation artifacts; they are not GitHub release downloads. No binary release has been published.
 
-Local version 0.1.2 adds differential spectrum editing, curve preview, normalization summaries and explicit flux/fluence conversion to the component authoring workflow. Verification includes 35/35 CTests, 41 environment-authoring checks, 31 native environment UI checks repeated with the packaged Worker, 27 component-authoring regression checks, installed SDK consumption and actual TKMaster integration. Equivalent flux/fluence examples produce identical seeded target doses and raw moments. See [environment acceptance](docs/ENVIRONMENT_ACCEPTANCE.md), [component authoring](docs/AUTHORING_ACCEPTANCE.md) and [foundation evidence](docs/BOOTSTRAP_ACCEPTANCE.md). This is a local research application; public-release and independent physical validation are not complete.
+Local version 0.1.3 adds a shared-service CLI with project validation, actual runtime inspection, NDJSON progress, accepted result summaries and cancellation. Verification includes 37/37 CTests, 49 Windows and 53 Linux real CLI checks, 31 environment UI and 27 component-authoring regression checks, installed SDK consumption and actual TKMaster integration. See [CLI acceptance](docs/CLI_ACCEPTANCE.md), [environment authoring](docs/ENVIRONMENT_ACCEPTANCE.md), [component authoring](docs/AUTHORING_ACCEPTANCE.md) and [foundation evidence](docs/BOOTSTRAP_ACCEPTANCE.md). This is a local research application; public-release and independent physical validation are not complete.
 
-For this workstation, launch `dist/SpaceRad-0.1.2-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them.
+For this workstation, launch `dist/SpaceRad-0.1.3-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them. The same directory contains `spacerad_cli.exe` and a [CLI guide](docs/CLI.md).
 
 ## First workflow scope
 
 The workflow supports new basic projects, add/edit/remove dialogs for boxes, box shells, cylinders and spheres, component materials/sensitivity and placement, synthetic demo or user-supplied differential CSV spectra, history/exposure controls, per-target TID and Monte Carlo errors, and saved projects/results. Select a model tree item or result row to highlight and focus the component. Edits pass the existing geometry/source checks; deleting the last sensitive region is rejected. Template-generated descendants are selectable but are not directly editable by these dialogs. The model and worker retain mesh-related code, but this batch does not promise a full CAD UI. DDD and SEE are unavailable. Independent physical validation has not been completed.
 
 The Environment tab also supports manual energy/value tables, linear or bin-constant differential spectra, particle sampling shares and a linear-axis preview. Manual edits explicitly mark a synthetic environment and clear stale orbit-model metadata. Quantity conversion multiplies/divides values by the current exposure and records the operation. The bundled [electron/proton examples](examples/projects/README.md) can be opened directly; they do not execute an orbit model. The shared widget scrolls in small desktop/dock windows.
+
+The CLI uses that same analysis service without a desktop window. It emits ordered `spacerad.cli-event/1` NDJSON events on stdout and supports bounded runtime, SIGINT cancellation and stable exit codes. For example, from the local bundle directory:
+
+```powershell
+.\spacerad_cli.exe run --project .\examples\projects\electron-proton-flux.json --output "$env:TEMP\SpaceRad-new-job" --histories 100000 --timeout-seconds 600
+```
+
+Choose a new output directory. See [CLI integration](docs/CLI.md) for offline validation, runtime inspection and Python usage.
 
 ## Build
 
@@ -53,7 +61,7 @@ For the standalone shell, place a valid `runtime.json` beside the application or
 
 ## CMake targets
 
-The libraries are `spacerad_model`, `spacerad_services`, and `spacerad_widgets`, exported as `SpaceRad::Model`, `SpaceRad::Services`, and `SpaceRad::Widgets`. The executables are `spacerad`, `spacerad_embedded_example`, and `spacerad_worker`; the worker executable filename is `scdat_radiation_worker` (with the platform executable suffix). The public headers are `spacerad/AnalysisService.h` and `spacerad/WorkbenchWidget.h`; the model's public project alias is `spacerad::Project`. Internal engine C++ types are isolated under `spacerad::engine`; the compatible project/result JSON schema retains the `scdat.radiation/*` identifiers.
+The libraries are `spacerad_model`, `spacerad_services`, and `spacerad_widgets`, exported as `SpaceRad::Model`, `SpaceRad::Services`, and `SpaceRad::Widgets`. The executables are `spacerad`, `spacerad_cli`, `spacerad_embedded_example`, and `spacerad_worker`; the worker executable filename is `scdat_radiation_worker` (with the platform executable suffix). The CLI is built whenever services are enabled, including headless/service-only builds. The public service header provides runtime-file loading; widget users retain access through their existing include. Internal engine C++ types are isolated under `spacerad::engine`; the compatible project/result JSON schema retains the `scdat.radiation/*` identifiers.
 
 An installed full CMake package exports `SpaceRad::Widgets`, `SpaceRad::Services`, and `SpaceRad::Model`. A model-only installation exports `SpaceRad::Model` and rejects unavailable components. Source builds or static libraries built with the same toolchain are the supported integration paths for now. Qt 6 and VTK ABI/toolchain versions must match a GUI host. The full desktop SDK/runtime has not yet been accepted on a clean machine.
 

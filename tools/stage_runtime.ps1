@@ -5,3 +5,5 @@ cmake "-DBUILD_DIR=$([IO.Path]::GetFullPath($BuildDirectory))" "-DDESTINATION=$(
 if($LASTEXITCODE -ne 0){throw 'Runtime staging failed'}
 $taskRuntime=@{schema='spacerad.runtime/1';worker='scdat_radiation_worker.exe';data_root=[IO.Path]::GetFullPath($DataRoot);library_directories=@('.')}
 $taskRuntime | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $Destination 'runtime.json') -Encoding utf8
+$taskCliGuide=Join-Path $taskProjectRoot 'docs/CLI.md'
+if(Test-Path -LiteralPath $taskCliGuide){Copy-Item -LiteralPath $taskCliGuide -Destination (Join-Path $Destination 'CLI.md')}

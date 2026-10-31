@@ -38,6 +38,10 @@ The runtime file is JSON with exactly these top-level properties:
 
 `spacerad::loadRuntimeFile(path)` parses this schema and returns `RuntimeOptions`. The standalone shell reads `runtime.json` beside the executable by default and supports `--runtime <path>` to select another file. An embedding host can load the same file and call `setRuntime` on the widget.
 
+From 0.1.3, `loadRuntimeFile` is declared in `AnalysisService.h` and implemented by `SpaceRad::Services`, so a Qt Core host can read configuration without linking the widget library. Existing `WorkbenchWidget.h` consumers retain source access through its service include. Configuration loading also rejects duplicate JSON fields, excessive nesting and oversized files.
+
+Hosts written in other languages can use `spacerad_cli` as a child process: it exposes project validation, actual runtime inspection, NDJSON progress and accepted-result events through the same task service. See [CLI integration](CLI.md) for command/exit contracts and a Python example.
+
 ## Minimal Qt host example
 
 This example uses the built-in demo project to show the integration path. A real host can instead pass its own `spacerad::Project` via `setProject`.
