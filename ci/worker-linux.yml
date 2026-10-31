@@ -1,0 +1,9 @@
+name: spacerad-worker-ci
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - cmake=3.31
+  - ninja=1.12
+  - geant4=11.4.3=noqt_*
+  - qt6-main=6.8.3

@@ -1,0 +1,106 @@
+name: Worker transport
+
+on:
+  push:
+    branches: [main, 'codex/**']
+    paths:
+      - 'engine/**'
+      - 'src/**'
+      - 'include/**'
+      - 'tests/**'
+      - 'examples/projects/**'
+      - 'ci/worker-linux.yml'
+      - 'tools/check_worker_runtime.py'
+      - 'tools/prepare_worker_runtime.py'
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - '.github/workflows/worker-ci.yml'
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'src/**'
+      - 'include/**'
+      - 'tests/**'
+      - 'examples/projects/**'
+      - 'ci/worker-linux.yml'
+      - 'tools/check_worker_runtime.py'
+      - 'tools/prepare_worker_runtime.py'
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - '.github/workflows/worker-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  transport:
+    name: Linux / Geant4 11.4.3
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install pinned Worker dependencies
+        uses: mamba-org/setup-micromamba@f457c30a868e4760d3a6fcea5f25dc655b8edf39 # v3
+        with:
+          environment-file: ci/worker-linux.yml
+          init-shell: bash
+          cache-environment: false
+          cache-downloads: false
+          post-cleanup: all
+      - name: Record resolved package identities
+        run: |
+          mkdir -p build/worker-evidence
+          micromamba list --explicit > build/worker-evidence/packages-explicit.txt
+          micromamba list --json > build/worker-evidence/packages.json
+      - name: Configure headless Worker
+        run: >-
+          cmake -S . -B build/worker-ci -G Ninja
+          -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$CONDA_PREFIX"
+          -DSPACERAD_BUILD_SERVICES=ON -DSPACERAD_BUILD_DESKTOP=OFF
+          -DSPACERAD_BUILD_WORKER=ON -DBUILD_TESTING=ON
+          -DCMAKE_DISABLE_FIND_PACKAGE_VTK=ON
+      - name: Build Worker, services and tests
+        run: cmake --build build/worker-ci --parallel 2
+      - name: Test model and service contracts
+        run: >-
+          ctest --test-dir build/worker-ci --output-on-failure --no-tests=error
+          --output-junit worker-tests.xml --parallel 2
+      - name: Prepare audited dataset mapping
+        run: >-
+          python tools/prepare_worker_runtime.py
+          --worker build/worker-ci/scdat_radiation_worker
+          --prefix "$CONDA_PREFIX" --output-dir build/worker-runtime
+      - name: Run real transport and service acceptance
+        run: >-
+          python tools/check_worker_runtime.py
+          --runtime build/worker-runtime/runtime.json
+          --service-test build/worker-ci/test_service_runtime
+          --output-dir build/worker-acceptance
+      - name: Preserve logs and numerical evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: worker-linux-evidence
+          path: |
+            build/worker-evidence/*.txt
+            build/worker-evidence/*.json
+            build/worker-ci/worker-tests.xml
+            build/worker-ci/Testing/Temporary/LastTest.log
+            build/worker-ci/radiation-build.json
+            build/worker-ci/radiation-datasets.txt
+            build/worker-runtime/*.json
+            build/worker-acceptance/**/*.json
+            build/worker-acceptance/**/*.log
+          if-no-files-found: warn
+          retention-days: 14

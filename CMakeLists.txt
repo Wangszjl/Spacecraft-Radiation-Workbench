@@ -43,6 +43,8 @@ if(SPACERAD_BUILD_SERVICES)
  target_link_libraries(spacerad_services PUBLIC spacerad_io)
 endif()
 if(SPACERAD_BUILD_WORKER)
+ # Some supported Geant4 packages discover C dependencies (e.g. HDF5).
+ enable_language(C)
  find_package(Geant4 11.3 REQUIRED CONFIG)
  file(GLOB _transport CONFIGURE_DEPENDS engine/transport/*.cpp)
  add_executable(spacerad_worker engine/RadiationWorker.cpp ${_transport} engine/runtime/RadiationRuntime.cpp engine/runtime/BatchRunner.cpp engine/runtime/ShieldingScanRunner.cpp engine/runtime/ResponseCacheRunner.cpp)
