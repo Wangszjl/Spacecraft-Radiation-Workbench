@@ -1,0 +1,65 @@
+name: Model build and SDK
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: model-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  model:
+    name: Model / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            generator: Ninja
+          - os: windows-2022
+            generator: Visual Studio 17 2022
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Configure without Qt, VTK or Geant4
+        run: >-
+          cmake -S . -B build/model-ci -G "${{ matrix.generator }}"
+          -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+          -DSPACERAD_BUILD_SERVICES=OFF
+          -DSPACERAD_BUILD_DESKTOP=OFF
+          -DSPACERAD_BUILD_WORKER=OFF
+          -DCMAKE_DISABLE_FIND_PACKAGE_Qt6=ON
+          -DCMAKE_DISABLE_FIND_PACKAGE_VTK=ON
+          -DCMAKE_DISABLE_FIND_PACKAGE_Geant4=ON
+      - name: Build C++17 model and tests
+        run: cmake --build build/model-ci --config Release --parallel 2
+      - name: Test model contracts and geometry
+        run: >-
+          ctest --test-dir build/model-ci -C Release --output-on-failure
+          --no-tests=error --output-junit model-tests.xml --parallel 2
+      - name: Install, relocate and consume model SDK
+        run: >-
+          python tools/check_model_install.py --build build/model-ci
+          --work "build/model sdk acceptance" --config Release
+      - name: Preserve test and installation evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: model-evidence-${{ matrix.os }}
+          path: |
+            build/model-ci/model-tests.xml
+            build/model-ci/Testing/Temporary/LastTest.log
+            build/model sdk acceptance/summary.json
+            build/model sdk acceptance/*.log
+          if-no-files-found: warn
+          retention-days: 14

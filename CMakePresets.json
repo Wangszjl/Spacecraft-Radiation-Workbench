@@ -19,6 +19,18 @@
       "cacheVariables": {
         "SPACERAD_BUILD_DESKTOP": "OFF"
       }
+    },
+    {
+      "name": "model",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/model",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTING": "ON",
+        "SPACERAD_BUILD_SERVICES": "OFF",
+        "SPACERAD_BUILD_DESKTOP": "OFF",
+        "SPACERAD_BUILD_WORKER": "OFF"
+      }
     }
   ],
   "buildPresets": [
@@ -29,12 +41,23 @@
     {
       "name": "worker",
       "configurePreset": "worker"
+    },
+    {
+      "name": "model",
+      "configurePreset": "model"
     }
   ],
   "testPresets": [
     {
       "name": "desktop",
       "configurePreset": "desktop",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "model",
+      "configurePreset": "model",
       "output": {
         "outputOnFailure": true
       }
