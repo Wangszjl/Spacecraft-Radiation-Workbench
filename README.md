@@ -1,5 +1,7 @@
 # Spacecraft Radiation Workbench
 
+[![Model build and SDK](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/workflows/model-ci.yml/badge.svg?branch=main)](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/workflows/model-ci.yml)
+
 Spacecraft Radiation Workbench is an independent C++/Qt desktop application and reusable analysis UI for spacecraft radiation studies. Its standalone shell and an embedding Qt host use the same `spacerad::WorkbenchWidget` and `spacerad::AnalysisService`. Geant4 runs in a separate `scdat_radiation_worker` process; the GUI host does not link Geant4.
 
 Source repository: [Wangszjl/Spacecraft-Radiation-Workbench](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench), published on 2026-10-31.
@@ -30,7 +32,19 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH='<Qt>;<VTK>;<Geant4>'
 cmake --build build --config Release
 ```
 
-Replace the placeholders with the package prefixes on your machine. This is the intended local build command; CI and clean-machine installation/runtime acceptance are still pending. Linux has not been accepted.
+Replace the placeholders with the package prefixes on your machine. Full desktop/transport CI and clean-machine runtime installation are still pending. Linux desktop/transport has not been accepted.
+
+The model library can also be built and installed without Qt, VTK or Geant4:
+
+```powershell
+cmake --preset model
+cmake --build --preset model
+ctest --preset model
+```
+
+This preset requires Ninja and an initialized compiler environment. The [model build guide](docs/MODEL_BUILD.md) covers Windows Visual Studio generators, model-only SDK consumption and the Windows/Linux CI workflow. Model-only CI checks 13 CTests plus installation, relocation and external-consumer acceptance; it does not certify the desktop or transport on Linux.
+
+Both Windows and Linux model jobs passed in the [first actual CI run](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/runs/41189019059). See [model CI acceptance](docs/MODEL_CI_ACCEPTANCE.md) for its source revision, evidence and the full Windows desktop regression.
 
 For the standalone shell, place a valid `runtime.json` beside the application or pass `--runtime <path>`; the shell also accepts `--project <path>`. See [Embedding](docs/EMBEDDING.md) for the schema and host integration example.
 
@@ -38,8 +52,8 @@ For the standalone shell, place a valid `runtime.json` beside the application or
 
 The libraries are `spacerad_model`, `spacerad_services`, and `spacerad_widgets`, exported as `SpaceRad::Model`, `SpaceRad::Services`, and `SpaceRad::Widgets`. The executables are `spacerad`, `spacerad_embedded_example`, and `spacerad_worker`; the worker executable filename is `scdat_radiation_worker` (with the platform executable suffix). The public headers are `spacerad/AnalysisService.h` and `spacerad/WorkbenchWidget.h`; the model's public project alias is `spacerad::Project`. Internal engine C++ types are isolated under `spacerad::engine`; the compatible project/result JSON schema retains the `scdat.radiation/*` identifiers.
 
-An installed CMake package exports `SpaceRad::Widgets`, `SpaceRad::Services`, and `SpaceRad::Model`. Source builds or static libraries built with the same toolchain are the supported integration paths for now. Qt 6 and VTK ABI/toolchain versions must match the host. The export/install flow has not yet been accepted on a clean machine.
+An installed full CMake package exports `SpaceRad::Widgets`, `SpaceRad::Services`, and `SpaceRad::Model`. A model-only installation exports `SpaceRad::Model` and rejects unavailable components. Source builds or static libraries built with the same toolchain are the supported integration paths for now. Qt 6 and VTK ABI/toolchain versions must match a GUI host. The full desktop SDK/runtime has not yet been accepted on a clean machine.
 
 ## Release status
 
-The public source repository is available. Code ownership and third-party license review, data redistribution rights, clean-machine install/runtime acceptance, CI, Linux support, independent scientific verification, and packaged binary releases remain open. The project license has not been selected; no license or redistribution permission is asserted. The local engineering evidence establishes the recorded scope only; it does not establish scientific or clean-machine acceptance. See [the readiness checklist](docs/RELEASE_READINESS.md).
+The public source repository and model CI workflow are available. Code ownership and third-party license review, data redistribution rights, clean-machine desktop runtime acceptance, full desktop/transport CI, Linux desktop support, independent scientific verification, and packaged binary releases remain open. The project license has not been selected; no license or redistribution permission is asserted. Engineering evidence establishes its recorded scope only; model CI does not establish desktop or scientific acceptance. See [the readiness checklist](docs/RELEASE_READINESS.md).

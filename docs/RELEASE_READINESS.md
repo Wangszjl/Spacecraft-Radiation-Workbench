@@ -26,6 +26,7 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [ ] Code ownership/provenance review and selection of the project's license. No redistribution permission is asserted by this local extraction.
 - [ ] Third-party license review, required notices/source offers, and data/example redistribution rights.
 - [ ] Clean Windows machine installation/runtime acceptance, including dataset provisioning and required system runtimes.
-- [ ] CI on supported toolchains, release packaging and installation documentation; Linux has not been built or accepted.
+- [x] Model-only Windows/MSVC and Linux/GCC CI: 13 CTests and 10 relocated-SDK checks on each platform. [Actual successful run](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/runs/41189019059), [scope and evidence](MODEL_CI_ACCEPTANCE.md).
+- [ ] Full desktop/Worker CI, release packaging and installation documentation; Linux desktop/transport has not been accepted.
 - [x] Public source repository created and source history pushed on 2026-10-31: [Wangszjl/Spacecraft-Radiation-Workbench](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench), default branch `main`. Local SDK/data/build/report/runtime directories are excluded.
 - [ ] Packaged binary release publication after the remaining applicable distribution and installation checks. Public source hosting does not establish license clearance or scientific validation.
