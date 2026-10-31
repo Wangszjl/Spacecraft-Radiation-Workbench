@@ -27,6 +27,7 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [ ] Third-party license review, required notices/source offers, and data/example redistribution rights.
 - [ ] Clean Windows machine installation/runtime acceptance, including dataset provisioning and required system runtimes.
 - [x] Model-only Windows/MSVC and Linux/GCC CI: 13 CTests and 10 relocated-SDK checks on each platform. [Actual successful run](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/runs/41189019059), [scope and evidence](MODEL_CI_ACCEPTANCE.md).
-- [ ] Full desktop/Worker CI, release packaging and installation documentation; Linux desktop/transport has not been accepted.
+- [x] Linux headless Geant4 11.4.3 Worker CI: 35 CTests and 57 real transport/service checks; new Windows headless build also passes. [Successful run](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/runs/41191922702), [evidence and scope](WORKER_CI_ACCEPTANCE.md).
+- [ ] Full desktop CI and Windows hosted Worker CI, release packaging and installation documentation; Linux desktop rendering has not been accepted.
 - [x] Public source repository created and source history pushed on 2026-10-31: [Wangszjl/Spacecraft-Radiation-Workbench](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench), default branch `main`. Local SDK/data/build/report/runtime directories are excluded.
 - [ ] Packaged binary release publication after the remaining applicable distribution and installation checks. Public source hosting does not establish license clearance or scientific validation.

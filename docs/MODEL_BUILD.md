@@ -48,4 +48,4 @@ The target propagates C++17 and its public include paths. `spacerad/Project.h`, 
 
 The action revisions are pinned. Workflow syntax and action usage follow the upstream [GitHub workflow reference](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax), [checkout](https://github.com/actions/checkout) and [upload-artifact](https://github.com/actions/upload-artifact) documentation.
 
-A model CI pass establishes the recorded build/test/install scope only. Linux desktop rendering, Geant4 transport, dataset provisioning, clean-machine installation, licensing and independent physical validation remain separate work.
+A model CI pass establishes the recorded build/test/install scope only. Actual headless Geant4 transport and dataset provisioning are checked by the separate [Worker CI](WORKER_CI_ACCEPTANCE.md). Linux desktop rendering, clean-machine desktop installation, licensing and independent physical validation remain separate work.

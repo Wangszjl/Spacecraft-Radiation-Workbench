@@ -1,6 +1,7 @@
 # Spacecraft Radiation Workbench
 
 [![Model build and SDK](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/workflows/model-ci.yml/badge.svg?branch=main)](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/workflows/model-ci.yml)
+[![Worker transport](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/workflows/worker-ci.yml/badge.svg?branch=main)](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/workflows/worker-ci.yml)
 
 Spacecraft Radiation Workbench is an independent C++/Qt desktop application and reusable analysis UI for spacecraft radiation studies. Its standalone shell and an embedding Qt host use the same `spacerad::WorkbenchWidget` and `spacerad::AnalysisService`. Geant4 runs in a separate `scdat_radiation_worker` process; the GUI host does not link Geant4.
 
@@ -32,7 +33,7 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH='<Qt>;<VTK>;<Geant4>'
 cmake --build build --config Release
 ```
 
-Replace the placeholders with the package prefixes on your machine. Full desktop/transport CI and clean-machine runtime installation are still pending. Linux desktop/transport has not been accepted.
+Replace the placeholders with the package prefixes on your machine. Full desktop CI, Windows hosted Worker CI and clean-machine desktop installation are still pending. Linux desktop rendering has not been accepted.
 
 The model library can also be built and installed without Qt, VTK or Geant4:
 
@@ -46,6 +47,8 @@ This preset requires Ninja and an initialized compiler environment. The [model b
 
 Both Windows and Linux model jobs passed in the [first actual CI run](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/runs/41189019059). See [model CI acceptance](docs/MODEL_CI_ACCEPTANCE.md) for its source revision, evidence and the full Windows desktop regression.
 
+The separate [headless Worker workflow](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/runs/41191922702) also passed on Linux with Geant4 11.4.3: 35 CTests and 57 real transport/service checks. A new local Windows headless build passed the same checks. This covers actual synthetic electron/proton transport, repeated seeds, flux/fluence equivalence, exposure scaling and analytic sphere/source checks. See [Worker build instructions](docs/WORKER_BUILD.md) and [acceptance limits](docs/WORKER_CI_ACCEPTANCE.md); it is not independent dose physics validation.
+
 For the standalone shell, place a valid `runtime.json` beside the application or pass `--runtime <path>`; the shell also accepts `--project <path>`. See [Embedding](docs/EMBEDDING.md) for the schema and host integration example.
 
 ## CMake targets
@@ -56,4 +59,4 @@ An installed full CMake package exports `SpaceRad::Widgets`, `SpaceRad::Services
 
 ## Release status
 
-The public source repository and model CI workflow are available. Code ownership and third-party license review, data redistribution rights, clean-machine desktop runtime acceptance, full desktop/transport CI, Linux desktop support, independent scientific verification, and packaged binary releases remain open. The project license has not been selected; no license or redistribution permission is asserted. Engineering evidence establishes its recorded scope only; model CI does not establish desktop or scientific acceptance. See [the readiness checklist](docs/RELEASE_READINESS.md).
+The public source repository, Windows/Linux model CI and Linux headless Worker CI are available. Code ownership and third-party license review, data redistribution rights, clean-machine desktop runtime acceptance, full desktop CI, Windows hosted Worker CI, Linux desktop support, independent scientific verification, and packaged binary releases remain open. The project license has not been selected; no license or redistribution permission is asserted. Engineering evidence establishes its recorded scope only; CI does not establish desktop or scientific acceptance. See [the readiness checklist](docs/RELEASE_READINESS.md).
