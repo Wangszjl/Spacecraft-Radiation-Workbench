@@ -39,6 +39,9 @@ def main():
         source.relative_to(prefix)
         if not source.is_dir() or not any(source.iterdir()):
             raise RuntimeError("Missing or empty activated dataset: " + variable)
+        accepted_names = {name, name[2:]} if name.startswith("G4") else {name}
+        if source.name not in accepted_names:
+            raise RuntimeError("Activated dataset version/name differs from manifest: " + variable)
         # The environment pins dataset packages; never guess a different version by name.
         entries.append({"variable": variable, "manifest_directory": name, "source": str(source)})
     required = {"G4LEDATA", "G4PARTICLEXSDATA", "G4LEVELGAMMADATA", "G4ENSDFSTATEDATA", "G4RADIOACTIVEDATA"}
