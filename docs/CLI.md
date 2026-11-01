@@ -4,9 +4,11 @@
 
 0.1.4增加离线 `inspect-result --job <任务目录>` 和 `compare --baseline <A目录> --candidate <B目录>`。它们无需运行配置或 Geant4，分别输出 `archived-result` / `comparison` JSON 事件。完整语义、对比标记和限制见[历史任务与剂量对比](RESULTS.md)。
 
+0.1.5增加 `plan-scan`、`scan` 和 `inspect-scan`，用于固定内腔的盒壳厚度扫描。设置、总抽样预算与取消语义见[自动屏蔽厚度扫描](SHIELDING_SCAN.md)。
+
 ## 本机运行包
 
-在本机 `dist/SpaceRad-0.1.4-local/` 打开PowerShell。包内 `runtime.json` 已配置本机外置Geant4数据，以下命令可以直接使用：
+在本机 `dist/SpaceRad-0.1.5-local/` 打开PowerShell。包内 `runtime.json` 已配置本机外置Geant4数据，以下命令可以直接使用：
 
 ```powershell
 .\spacerad_cli.exe validate --project .\examples\projects\electron-proton-flux.json

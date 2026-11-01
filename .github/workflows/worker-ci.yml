@@ -15,6 +15,8 @@ on:
       - 'tools/prepare_worker_runtime.py'
       - 'tools/check_cli_runtime.py'
       - 'tools/check_results_runtime.py'
+      - 'tools/check_scan_runtime.py'
+      - 'examples/scans/**'
       - 'CMakeLists.txt'
       - 'cmake/**'
       - '.github/workflows/worker-ci.yml'
@@ -31,6 +33,8 @@ on:
       - 'tools/prepare_worker_runtime.py'
       - 'tools/check_cli_runtime.py'
       - 'tools/check_results_runtime.py'
+      - 'tools/check_scan_runtime.py'
+      - 'examples/scans/**'
       - 'CMakeLists.txt'
       - 'cmake/**'
       - '.github/workflows/worker-ci.yml'
@@ -105,6 +109,13 @@ jobs:
           --cli build/worker-ci/spacerad_cli
           --runtime build/worker-runtime/runtime.json
           --output-dir build/results-acceptance
+      - name: Run fixed-cavity shielding scan acceptance
+        run: >-
+          python tools/check_scan_runtime.py
+          --cli build/worker-ci/spacerad_cli
+          --runtime build/worker-runtime/runtime.json
+          --service-test build/worker-ci/test_scan_runtime
+          --output-dir build/scan-acceptance
       - name: Preserve logs and numerical evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -124,5 +135,8 @@ jobs:
             build/cli-acceptance/**/*.log
             build/results-acceptance/**/*.json
             build/results-acceptance/**/*.log
+            build/scan-acceptance/**/*.json
+            build/scan-acceptance/**/*.log
+            build/scan-acceptance/**/*.csv
           if-no-files-found: warn
           retention-days: 14

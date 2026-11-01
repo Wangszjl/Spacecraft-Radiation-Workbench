@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.22)
+project(SpaceRadScanConsumer LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+find_package(SpaceRad 0.1 REQUIRED CONFIG COMPONENTS Services)
+add_executable(spacerad_scan_consumer main.cpp)
+target_link_libraries(spacerad_scan_consumer PRIVATE SpaceRad::Services)

@@ -1,0 +1,9 @@
+{
+  "schema": "spacerad.shielding-settings/1",
+  "shell_id": "Shield_Al",
+  "thicknesses_mm": [
+    0,
+    0.5,
+    2
+  ]
+}

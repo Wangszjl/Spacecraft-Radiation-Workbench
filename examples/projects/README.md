@@ -1,5 +1,7 @@
 # Synthetic electron/proton examples
 
+`shielding-scan.json` is a separate small Si sphere / Al box-shell example for the [automated scan workflow](../../docs/SHIELDING_SCAN.md). It uses the same synthetic spectra, a 40 mm source radius and 10,000 histories per incident species/thickness. The paired settings file is `examples/scans/three-thicknesses.json`. The two flux/fluence examples below retain their original three-target geometry and normalization.
+
 Open either JSON with the desktop's Open Project action. Both use the built-in three-target analytic geometry and the same isotropic omnidirectional scalar environment. They contain deliberately simple numbers for software checks, not AP8/AE8, AE9/AP9 or a mission prediction.
 
 | Particle | Energy MeV | Linear differential flux (cm-2 s-1 MeV-1) | Integral (cm-2 s-1) |

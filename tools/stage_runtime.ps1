@@ -9,3 +9,5 @@ $taskCliGuide=Join-Path $taskProjectRoot 'docs/CLI.md'
 if(Test-Path -LiteralPath $taskCliGuide){Copy-Item -LiteralPath $taskCliGuide -Destination (Join-Path $Destination 'CLI.md')}
 $taskResultsGuide=Join-Path $taskProjectRoot 'docs/RESULTS.md'
 if(Test-Path -LiteralPath $taskResultsGuide){Copy-Item -LiteralPath $taskResultsGuide -Destination (Join-Path $Destination 'RESULTS.md')}
+$taskScanGuide=Join-Path $taskProjectRoot 'docs/SHIELDING_SCAN.md'
+if(Test-Path -LiteralPath $taskScanGuide){Copy-Item -LiteralPath $taskScanGuide -Destination (Join-Path $Destination 'SHIELDING_SCAN.md')}

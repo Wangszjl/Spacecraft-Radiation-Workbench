@@ -21,6 +21,7 @@ public:
  QString selectedComponent() const;
  // Opens an independent offline viewer; live project/service state is preserved.
  void showResults(const QString& baselineDirectory={},const QString& candidateDirectory={});
+ void showShieldingScan(const QString& archiveDirectory={});
 signals:
  void resultReady(const QByteArray&);
  void projectChanged();

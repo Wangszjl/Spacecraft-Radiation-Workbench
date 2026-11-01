@@ -1,5 +1,6 @@
 #include "spacerad/AnalysisService.h"
 #include "spacerad/Results.h"
+#include "spacerad/ShieldingScan.h"
 #include "Geometry.h"
 #include "runtime/ProjectFile.h"
 #include <QCommandLineParser>
@@ -11,6 +12,7 @@
 #include <QTimer>
 #include <csignal>
 #include <iostream>
+#include <set>
 #include <stdexcept>
 
 namespace {
@@ -61,6 +63,65 @@ engine::LoadedProject loadInput(const QCommandLineParser& parser) {
         loaded.project.validate();
     }
     return loaded;
+}
+ShieldingScanSettings scanSettings(const QCommandLineParser& parser) {
+    QFile file(parser.value("scan-settings"));
+    if(!file.open(QIODevice::ReadOnly) || file.size()<=0 || file.size()>65536)throw std::runtime_error("Configure scan settings <=64 KiB");
+    const auto raw=file.read(65537);
+    if(file.error()!=QFileDevice::NoError || raw.size()>65536)throw std::runtime_error("Cannot read bounded scan settings");
+    std::vector<std::set<std::string>> keys;
+    const auto json=Json::parse(raw.toStdString(),[&](int depth,Json::parse_event_t event,Json& value){
+        if(depth>16)throw std::runtime_error("Scan settings nesting exceeds 16");
+        if(event==Json::parse_event_t::object_start)keys.emplace_back();
+        else if(event==Json::parse_event_t::key){if(!keys.back().insert(value.get<std::string>()).second)throw std::runtime_error("Duplicate scan settings key");}
+        else if(event==Json::parse_event_t::object_end)keys.pop_back();
+        return true;
+    });
+    return ShieldingScanSettings::fromJson(json);
+}
+int scan(QCoreApplication& app,const QCommandLineParser& parser,Reporter& reporter) {
+    const auto loaded=loadInput(parser);const auto settings=scanSettings(parser);
+    const auto plan=planShieldingScan(loaded.project,settings);
+    if(parser.value("output").trimmed().isEmpty())throw std::runtime_error("A new scan output directory is required");
+    const auto output=QFileInfo(parser.value("output")).absoluteFilePath();
+    const auto runtime=loadRuntimeFile(runtimePath(parser));AnalysisService::childEnvironment(runtime);
+    int seconds=0;
+    if(parser.isSet("timeout-seconds")){bool ok=false;seconds=parser.value("timeout-seconds").toInt(&ok);if(!ok||seconds<0||seconds>86400)throw std::runtime_error("Timeout must be 0..86400 seconds");}
+    ShieldingScanService service;service.configure(runtime);bool terminal=false;int requestedExit=0;
+    QTimer timeout,interrupts;timeout.setSingleShot(true);interrupts.setInterval(50);
+    QObject::connect(&service,&ShieldingScanService::stateChanged,&app,[&](const QString& state){
+        if(terminal)return;
+        if(state=="cancelled"){
+            terminal=true;const int code=requestedExit?requestedExit:interruptExit();
+            reporter.event("cancelled",{{"exit_code",code},{"reason",code==124?"timeout":"interrupted"},{"output_directory",utf8(output)}});app.exit(code);
+        }else reporter.event("state",{{"state",utf8(state)}});
+    });
+    QObject::connect(&service,&ShieldingScanService::progress,&app,[&](int done,int total,int histories,int budget){if(!terminal)reporter.event("progress",{{"completed_cases",done},{"total_cases",total},{"histories",histories},{"total_histories",budget}});});
+    QObject::connect(&service,&ShieldingScanService::logMessage,&app,[&](const QString& text){if(parser.isSet("verbose"))std::cerr<<utf8(text)<<std::flush;});
+    QObject::connect(&service,&ShieldingScanService::failed,&app,[&](const QString& error){if(terminal)return;terminal=true;reporter.error(error,3);app.exit(3);});
+    QObject::connect(&service,&ShieldingScanService::completed,&app,[&](const QByteArray& raw){
+        if(terminal)return;
+        try {const auto result=Json::parse(raw.toStdString());terminal=true;reporter.event("scan-completed",{{"exit_code",0},{"output_directory",utf8(output)},
+            {"report",result},{"report_sha256",QCryptographicHash::hash(raw,QCryptographicHash::Sha256).toHex().toStdString()}});app.exit(0);}
+        catch(const std::exception& error){terminal=true;reporter.error(QString::fromUtf8(error.what()),3);app.exit(3);}
+    });
+    QObject::connect(&timeout,&QTimer::timeout,&app,[&]{if(!terminal&&service.running()){requestedExit=124;service.cancel();}});
+    QObject::connect(&interrupts,&QTimer::timeout,&app,[&]{if(interrupted&&!terminal&&service.running()){requestedExit=interruptExit();service.cancel();}});
+    std::signal(SIGINT,interruptHandler);std::signal(SIGTERM,interruptHandler);
+#ifdef SIGPIPE
+    std::signal(SIGPIPE,SIG_IGN);
+#endif
+#ifdef SIGBREAK
+    std::signal(SIGBREAK,interruptHandler);
+#endif
+    QTimer::singleShot(0,&app,[&]{
+        try {
+            if(interrupted){terminal=true;reporter.event("cancelled",{{"exit_code",interruptExit()},{"reason","interrupted"}});app.exit(interruptExit());return;}
+            reporter.event("scan-launch",{{"output_directory",utf8(output)},{"planned_cases",plan.at("cases").size()},{"histories_per_case",loaded.project.events},{"total_planned_histories",plan.at("total_planned_histories")}});
+            service.start(loaded.project,settings,output);if(seconds)timeout.start(seconds*1000);interrupts.start();
+        }catch(const std::exception& error){terminal=true;reporter.error(QString::fromUtf8(error.what()),2);app.exit(2);}
+    });
+    return app.exec();
 }
 int inspect(const RuntimeOptions& runtime, Reporter& reporter) {
     const auto environment = AnalysisService::childEnvironment(runtime);
@@ -215,10 +276,11 @@ int main(int argc, char** argv) {
     parser.setApplicationDescription("SpaceRad project validation and shared-service analysis. Machine commands emit NDJSON.");
     const auto help = parser.addHelpOption();
     const auto version = parser.addVersionOption();
-    parser.addPositionalArgument("command", "validate | inspect-runtime | run | inspect-result | compare");
+    parser.addPositionalArgument("command", "validate | inspect-runtime | run | inspect-result | compare | plan-scan | scan | inspect-scan");
     parser.addOptions({{{"p", "project"}, "Input project JSON.", "file"},
         {{"r", "runtime"}, "Runtime JSON; default: runtime.json beside the executable.", "file"},
-        {{"o", "output"}, "New job directory (run only).", "directory"},
+        {{"o", "output"}, "New job/scan directory (run or scan).", "directory"},
+        {"scan-settings", "Shielding scan settings JSON (plan-scan or scan).", "file"},
         {"job", "Completed job directory (inspect-result only).", "directory"},
         {"baseline", "Baseline completed job directory (compare only).", "directory"},
         {"candidate", "Candidate completed job directory (compare only).", "directory"},
@@ -230,19 +292,25 @@ int main(int argc, char** argv) {
     if (parser.isSet(version)) { std::cout << "spacerad_cli " << SPACERAD_APP_VERSION << '\n'; return 0; }
     try {
         const auto positional = parser.positionalArguments();
-        if (positional.size() != 1 || !QStringList{"validate", "inspect-runtime", "run", "inspect-result", "compare"}.contains(positional[0]))
-            throw std::runtime_error("Choose exactly one command: validate, inspect-runtime, run, inspect-result or compare");
+        if (positional.size() != 1 || !QStringList{"validate", "inspect-runtime", "run", "inspect-result", "compare", "plan-scan", "scan", "inspect-scan"}.contains(positional[0]))
+            throw std::runtime_error("Choose exactly one command; use --help for supported commands");
         const auto command = positional[0];
         for (const auto& option : parser.optionNames()) {
             QString canonical = option == "p" ? "project" : option == "r" ? "runtime" : option == "o" ? "output" : option;
             const bool allowed = (command == "run" && QStringList{"project", "runtime", "output", "histories", "timeout-seconds", "verbose"}.contains(canonical)) ||
                 (command == "validate" && (canonical == "project" || canonical == "histories")) ||
                 (command == "inspect-runtime" && canonical == "runtime") || (command == "inspect-result" && canonical == "job") ||
-                (command == "compare" && (canonical == "baseline" || canonical == "candidate"));
+                (command == "compare" && (canonical == "baseline" || canonical == "candidate")) ||
+                (command == "plan-scan" && QStringList{"project","histories","scan-settings"}.contains(canonical)) ||
+                (command == "scan" && QStringList{"project","histories","scan-settings","runtime","output","timeout-seconds","verbose"}.contains(canonical)) ||
+                (command == "inspect-scan" && canonical == "job");
             if (!allowed) throw std::runtime_error("Option is not supported by this command");
             if (parser.values(canonical).size() > 1) throw std::runtime_error("Duplicate option value");
         }
         if (command == "run") return analyze(app, parser, reporter);
+        if (command == "scan") return scan(app, parser, reporter);
+        if (command == "plan-scan") {const auto input=loadInput(parser);reporter.event("scan-planned",{{"exit_code",0},{"plan",planShieldingScan(input.project,scanSettings(parser))}});return 0;}
+        if (command == "inspect-scan") {reporter.event("archived-scan",{{"exit_code",0},{"report",loadShieldingScan(parser.value("job"))}});return 0;}
         if (command == "inspect-runtime") return inspect(loadRuntimeFile(runtimePath(parser)), reporter);
         if (command == "inspect-result") {
             const auto run = loadArchivedRun(parser.value("job"));

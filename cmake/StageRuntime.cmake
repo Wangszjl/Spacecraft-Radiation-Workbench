@@ -12,6 +12,7 @@ set(_executables "${BUILD_DIR}/spacerad.exe" "${BUILD_DIR}/spacerad_embedded_exa
 file(COPY ${_executables} "${BUILD_DIR}/radiation-build.json" "${BUILD_DIR}/radiation-datasets.txt" DESTINATION "${DESTINATION}")
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/../examples/projects")
  file(COPY "${CMAKE_CURRENT_LIST_DIR}/../examples/projects" DESTINATION "${DESTINATION}/examples")
+ file(COPY "${CMAKE_CURRENT_LIST_DIR}/../examples/scans" DESTINATION "${DESTINATION}/examples")
 endif()
 file(COPY "${QT_PREFIX}/plugins/platforms/qwindows.dll" DESTINATION "${DESTINATION}/platforms")
 if(EXISTS "${QT_PREFIX}/plugins/styles")
