@@ -38,7 +38,7 @@ class ResultsDialog final : public QDialog {
     Json report;
     QLineEdit *root, *apath, *bpath;
     QTreeWidget* jobs;
-    QLabel *status, *identity;
+    QLabel *status, *identity, *notice;
     QTableWidget* table;
     QPushButton *csv, *json;
 public:
@@ -78,6 +78,7 @@ public:
         apath = addSide(true); bpath = addSide(false);
         identity = new QLabel(this); identity->setObjectName("spaceradArchiveIdentity"); identity->setTextFormat(Qt::PlainText); identity->setWordWrap(true); identity->setTextInteractionFlags(Qt::TextSelectableByMouse); layout->addWidget(identity);
         status = new QLabel(this); status->setObjectName("spaceradComparisonStatus"); status->setTextFormat(Qt::PlainText); status->setWordWrap(true); layout->addWidget(status);
+        notice = new QLabel(this); notice->setObjectName("spaceradComparisonNotice"); notice->setTextFormat(Qt::PlainText); notice->setWordWrap(true); layout->addWidget(notice);
         table = new QTableWidget(0, 10, this); table->setObjectName("spaceradComparisonTable");
         table->setHorizontalHeaderLabels({tr("敏感区"), tr("匹配状态"), tr("条件核对"), "A Gy", "A SE Gy", "B Gy", "B SE Gy", "B−A Gy", "B/A", tr("非零历史 A / B")});
         table->setEditTriggers(QAbstractItemView::NoEditTriggers); table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents); layout->addWidget(table, 1);
@@ -127,6 +128,7 @@ private:
         catch (const std::exception& e) { render(); status->setText(tr("载入 %1 失败：%2").arg(baselineSide ? "A" : "B", QString::fromUtf8(e.what()))); }
     }
     void render() {
+        notice->clear();
         report = nullptr; table->setRowCount(0); csv->setEnabled(false); json->setEnabled(false);
         identity->clear(); status->setText(tr("请选择 A 任务；可再载入 B 对比。核对不认证文件生成者，也不验证剂量物理模型。"));
         QStringList identities;
@@ -169,8 +171,8 @@ private:
             const auto bytes = asCsv ? comparisonCsv(report) : QByteArray::fromStdString(report.dump(2));
             QSaveFile file(path);
             if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) throw std::runtime_error("Cannot save comparison export");
-            status->setText(tr("已导出：%1").arg(path));
-        } catch (const std::exception& e) { status->setText(QString::fromUtf8(e.what())); }
+            notice->setText(tr("已导出：%1").arg(path));
+        } catch (const std::exception& e) { notice->setText(QString::fromUtf8(e.what())); }
     }
 };
 }

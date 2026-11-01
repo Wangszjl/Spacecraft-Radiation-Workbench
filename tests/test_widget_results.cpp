@@ -77,6 +77,7 @@ int main(int argc, char** argv) {
         check(Json::parse(exported.readAll().toStdString()) == comparison, "Exported JSON equals loaded comparison including provenance");
         QFile csvFile(output + "/comparison.csv"); csvFile.open(QIODevice::ReadOnly);
         check(csvFile.readAll() == comparisonCsv(comparison), "Exported CSV equals precise numeric table");
+        check(status->text().contains(QString::fromUtf8("协方差")), "Export feedback preserves comparison uncertainty notice");
         viewer->grab().save(output + "/comparison.png");
         viewer->findChild<QPushButton*>("spaceradHistoryClearB")->click();
         check(!csv->isEnabled() && json->isEnabled() && table->rowCount() > 0, "Clearing B keeps A for offline review");
