@@ -2,9 +2,11 @@
 
 0.1.3增加 `spacerad_cli`。它只链接Qt Core和任务服务，调用独立Geant4 Worker执行计算。桌面工作台、Qt宿主与CLI共用同一个 `AnalysisService` 和运行配置读取函数。
 
+0.1.4增加离线 `inspect-result --job <任务目录>` 和 `compare --baseline <A目录> --candidate <B目录>`。它们无需运行配置或 Geant4，分别输出 `archived-result` / `comparison` JSON 事件。完整语义、对比标记和限制见[历史任务与剂量对比](RESULTS.md)。
+
 ## 本机运行包
 
-在 `dist/SpaceRad-0.1.3-local/` 打开PowerShell。包内 `runtime.json` 已配置本机外置Geant4数据，以下命令可以直接使用：
+在本机 `dist/SpaceRad-0.1.4-local/` 打开PowerShell。包内 `runtime.json` 已配置本机外置Geant4数据，以下命令可以直接使用：
 
 ```powershell
 .\spacerad_cli.exe validate --project .\examples\projects\electron-proton-flux.json

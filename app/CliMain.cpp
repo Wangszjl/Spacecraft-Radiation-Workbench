@@ -1,4 +1,5 @@
 #include "spacerad/AnalysisService.h"
+#include "spacerad/Results.h"
 #include "Geometry.h"
 #include "runtime/ProjectFile.h"
 #include <QCommandLineParser>
@@ -214,10 +215,13 @@ int main(int argc, char** argv) {
     parser.setApplicationDescription("SpaceRad project validation and shared-service analysis. Machine commands emit NDJSON.");
     const auto help = parser.addHelpOption();
     const auto version = parser.addVersionOption();
-    parser.addPositionalArgument("command", "validate | inspect-runtime | run");
+    parser.addPositionalArgument("command", "validate | inspect-runtime | run | inspect-result | compare");
     parser.addOptions({{{"p", "project"}, "Input project JSON.", "file"},
         {{"r", "runtime"}, "Runtime JSON; default: runtime.json beside the executable.", "file"},
         {{"o", "output"}, "New job directory (run only).", "directory"},
+        {"job", "Completed job directory (inspect-result only).", "directory"},
+        {"baseline", "Baseline completed job directory (compare only).", "directory"},
+        {"candidate", "Candidate completed job directory (compare only).", "directory"},
         {"histories", "Override histories (2..100000000).", "count"},
         {"timeout-seconds", "Cancel run after N seconds; 0 means unlimited.", "seconds"},
         {"verbose", "Forward Worker text to stderr; stdout remains NDJSON."}});
@@ -226,18 +230,31 @@ int main(int argc, char** argv) {
     if (parser.isSet(version)) { std::cout << "spacerad_cli " << SPACERAD_APP_VERSION << '\n'; return 0; }
     try {
         const auto positional = parser.positionalArguments();
-        if (positional.size() != 1 || (positional[0] != "validate" && positional[0] != "inspect-runtime" && positional[0] != "run"))
-            throw std::runtime_error("Choose exactly one command: validate, inspect-runtime or run");
+        if (positional.size() != 1 || !QStringList{"validate", "inspect-runtime", "run", "inspect-result", "compare"}.contains(positional[0]))
+            throw std::runtime_error("Choose exactly one command: validate, inspect-runtime, run, inspect-result or compare");
         const auto command = positional[0];
         for (const auto& option : parser.optionNames()) {
             QString canonical = option == "p" ? "project" : option == "r" ? "runtime" : option == "o" ? "output" : option;
-            const bool allowed = command == "run" || (command == "validate" && (canonical == "project" || canonical == "histories")) ||
-                (command == "inspect-runtime" && canonical == "runtime");
+            const bool allowed = (command == "run" && QStringList{"project", "runtime", "output", "histories", "timeout-seconds", "verbose"}.contains(canonical)) ||
+                (command == "validate" && (canonical == "project" || canonical == "histories")) ||
+                (command == "inspect-runtime" && canonical == "runtime") || (command == "inspect-result" && canonical == "job") ||
+                (command == "compare" && (canonical == "baseline" || canonical == "candidate"));
             if (!allowed) throw std::runtime_error("Option is not supported by this command");
             if (parser.values(canonical).size() > 1) throw std::runtime_error("Duplicate option value");
         }
         if (command == "run") return analyze(app, parser, reporter);
         if (command == "inspect-runtime") return inspect(loadRuntimeFile(runtimePath(parser)), reporter);
+        if (command == "inspect-result") {
+            const auto run = loadArchivedRun(parser.value("job"));
+            reporter.event("archived-result", {{"exit_code", 0}, {"summary", run.summary()}});
+            return 0;
+        }
+        if (command == "compare") {
+            const auto a = loadArchivedRun(parser.value("baseline"));
+            const auto b = loadArchivedRun(parser.value("candidate"));
+            reporter.event("comparison", {{"exit_code", 0}, {"comparison", compareRuns(a, b)}});
+            return 0;
+        }
         const auto loaded = loadInput(parser);
         const auto compiled = engine::compileGeometry(loaded.project);
         Json targets = Json::array();

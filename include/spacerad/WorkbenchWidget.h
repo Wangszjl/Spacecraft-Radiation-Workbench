@@ -19,6 +19,8 @@ public:
  AnalysisService* service() const;
  void selectComponent(const QString& id);
  QString selectedComponent() const;
+ // Opens an independent offline viewer; live project/service state is preserved.
+ void showResults(const QString& baselineDirectory={},const QString& candidateDirectory={});
 signals:
  void resultReady(const QByteArray&);
  void projectChanged();
