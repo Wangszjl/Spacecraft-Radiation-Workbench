@@ -14,6 +14,7 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QScrollArea>
 #include <QSpinBox>
 #include <QStandardPaths>
 #include <QTableWidget>
@@ -58,7 +59,9 @@ class ShieldingDialog final:public QDialog {
 public:
     ShieldingDialog(QWidget* parent,const Project& p,const RuntimeOptions& runtime,const QString& archive):QDialog(parent),source(p) {
         setObjectName("spaceradShieldingDialog");setAttribute(Qt::WA_DeleteOnClose);setWindowTitle(tr("SpaceRad · 自动屏蔽厚度扫描"));resize(1150,850);
-        auto* layout=new QVBoxLayout(this);
+        auto* outer=new QVBoxLayout(this);outer->setContentsMargins(0,0,0,0);
+        auto* scroll=new QScrollArea(this);scroll->setObjectName("spaceradScanScroll");scroll->setWidgetResizable(true);scroll->setFrameShape(QFrame::NoFrame);
+        auto* body=new QWidget(scroll);scroll->setWidget(body);outer->addWidget(scroll);auto* layout=new QVBoxLayout(body);
         auto* help=new QLabel(tr("使用打开窗口时的工程快照：%1。保持所选盒壳内腔、位置和材料不变，向外增加壁厚；0 mm 移除所选盒壳。每个厚度分别运行电子/质子，当前工程不变。").arg(QString::fromStdString(source.name)),this);help->setWordWrap(true);help->setTextFormat(Qt::PlainText);layout->addWidget(help);
         editor=new QGroupBox(tr("扫描设置"),this);auto* form=new QFormLayout(editor);
         shell=new QComboBox(editor);shell->setObjectName("spaceradScanShell");for(const auto& v:source.volumes)if(v.shape=="box"&&v.wall>0&&!v.sensitive)shell->addItem(QString::fromStdString(v.id));form->addRow(tr("直接定义的非敏感盒壳"),shell);

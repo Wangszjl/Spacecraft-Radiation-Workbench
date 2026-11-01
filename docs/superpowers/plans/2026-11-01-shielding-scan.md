@@ -4,7 +4,7 @@
 - [x] 共享异步服务，逐项执行、冻结运行资产、取消 / 失败档案和离线重建核对。
 - [x] CLI 规划、扫描、进度、超时 / 中断与历史核对。
 - [x] 独立 / 嵌入工作台扫描窗口，厚度曲线、误差棒及 CSV / JSON 导出。
-- [ ] 最终格式的真实输运、取消 / 篡改、原生界面和已有功能回归。
-- [ ] 安装后 SDK、本地运行包、公开源代码及对应 CI 验证。
+- [x] 最终格式的真实输运、取消 / 篡改、原生界面和已有功能回归。
+- [x] 安装后 SDK、本地运行包、公开源代码及对应 CI 验证：[Linux 真实输运与扫描](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/runs/41266563822)、[Windows/Linux 模型与 SDK](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/runs/41266563901)。[验收记录](../../SHIELDING_SCAN_ACCEPTANCE.md)。
 
 范围是固定预算的盒壳厚度敏感性分析；不将独立剂量物理验证、轨道模型、完整 CAD 或经校准 DDD / SEE 标为完成。

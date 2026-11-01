@@ -16,6 +16,8 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSpinBox>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QSurfaceFormat>
 #include <QTableWidget>
 #include <QTimer>
@@ -66,6 +68,9 @@ int main(int argc,char** argv){
         exportFile(*dialog,"spaceradScanCsv",out+"/export.csv");exportFile(*dialog,"spaceradScanJson",out+"/export.json");
         QFile exported(out+"/export.json");exported.open(QIODevice::ReadOnly);check(Json::parse(exported.readAll().toStdString())==report,"Scan JSON export retains report and provenance");
         QFile exportedCsv(out+"/export.csv");exportedCsv.open(QIODevice::ReadOnly);check(exportedCsv.readAll()==shieldingScanCsv(report),"Scan CSV export retains sums and species components");
+        dialog->resize(650,480);app.processEvents();auto* scroll=dialog->findChild<QScrollArea*>("spaceradScanScroll");scroll->ensureWidgetVisible(button(*dialog,"spaceradScanCsv"));app.processEvents();
+        check(scroll->verticalScrollBar()->maximum()>0&&scroll->viewport()->rect().contains(button(*dialog,"spaceradScanCsv")->mapTo(scroll->viewport(),button(*dialog,"spaceradScanCsv")->rect().center())),"Small scan windows scroll to result exports");
+        dialog->resize(1150,850);scroll->verticalScrollBar()->setValue(0);app.processEvents();
         check(dialog->grab().save(out+"/scan.png"),"Native scan window screenshot");
         output->setText(out+"/cancelled");histories->setValue(100000000);run(*dialog,true);
         check(service->result().isEmpty()&&loadShieldingScan(out+"/cancelled").at("status")=="cancelled","Cancelled UI scan retains terminal archive without full accepted result");
