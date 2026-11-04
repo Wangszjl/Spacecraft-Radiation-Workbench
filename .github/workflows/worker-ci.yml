@@ -17,6 +17,7 @@ on:
       - 'tools/check_results_runtime.py'
       - 'tools/check_scan_runtime.py'
       - 'tools/check_voxel_runtime.py'
+      - 'tools/check_pstar_dose.py'
       - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
       - 'CMakeLists.txt'
@@ -37,6 +38,7 @@ on:
       - 'tools/check_results_runtime.py'
       - 'tools/check_scan_runtime.py'
       - 'tools/check_voxel_runtime.py'
+      - 'tools/check_pstar_dose.py'
       - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
       - 'CMakeLists.txt'
@@ -126,6 +128,12 @@ jobs:
           --cli build/worker-ci/spacerad_cli
           --runtime build/worker-runtime/runtime.json
           --output-dir build/voxel-acceptance
+      - name: Compare silicon proton dose with NIST PSTAR
+        run: >-
+          python tools/check_pstar_dose.py
+          --cli build/worker-ci/spacerad_cli
+          --runtime build/worker-runtime/runtime.json
+          --output-dir build/pstar-acceptance
       - name: Preserve logs and numerical evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -150,5 +158,7 @@ jobs:
             build/scan-acceptance/**/*.csv
             build/voxel-acceptance/**/*.json
             build/voxel-acceptance/**/*.log
+            build/pstar-acceptance/**/*.json
+            build/pstar-acceptance/**/*.log
           if-no-files-found: warn
           retention-days: 14

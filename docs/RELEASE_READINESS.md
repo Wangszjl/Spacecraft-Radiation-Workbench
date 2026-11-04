@@ -19,10 +19,11 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [x] Shared-service CLI and Qt Core runtime loading: project/runtime checks, NDJSON progress, accepted-result summaries, timeout/interruption and stable exits. Version 0.1.3: 37 CTests; 49 Windows / 53 Linux real CLI checks; desktop and actual host regressions passed. [Acceptance](CLI_ACCEPTANCE.md).
 - [x] Saved-job review and dose comparison in desktop/embedded widget, Qt Core SDK and CLI. Version 0.1.4: 38 CTests, 38 real shielding/archive integration checks, 17 native viewer checks, portable archive loading and existing GUI/TKMaster regressions. [Behavior](RESULTS.md), [acceptance](RESULTS_ACCEPTANCE.md).
 - [x] Automated fixed-cavity box-shell thickness scans, per-species real transport, cancellation, dose/error curves, exports and offline reconstruction. Version 0.1.5: 39 CTests, 94 Windows CLI/integration checks including 19 service checks, and 19 final native UI checks. [Behavior](SHIELDING_SCAN.md), [acceptance](SHIELDING_SCAN_ACCEPTANCE.md).
-- [x] Spatial TID scoring for uniform sensitive boxes: project configuration, strict worker result validation, VTK overlay, slice view, and portable VTI/CSV export. Version 0.1.6 local validation adds real-worker energy conservation and GUI checks; hosted CI is pending. [Behavior](VOXEL_SCORING.md), [acceptance](VOXEL_ACCEPTANCE.md).
+- [x] Spatial TID scoring for uniform sensitive boxes: project configuration, strict worker result validation, VTK overlay, slice view, and portable VTI/CSV export. Version 0.1.6 passed local and hosted Worker voxel validation. [Behavior](VOXEL_SCORING.md), [acceptance](VOXEL_ACCEPTANCE.md).
 - [ ] Extended spacecraft model import/assembly workflows, placement tools and full CAD interaction.
 - [ ] Reference environment/model execution and qualified environment examples; current first UI uses synthetic or externally supplied spectra.
 - [ ] Calibrated device DDD/SEE workflows and response data.
+- [x] First external-reference TID regression: thin silicon sphere, 10/20 MeV protons, analytic entry and fluence checks, 38 Windows checks. [PSTAR benchmark](PSTAR_BENCHMARK.md).
 - [ ] Independent physical validation and geometry/dose sensitivity studies.
 
 ## Public-release gates — still open

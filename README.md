@@ -16,6 +16,8 @@ This repository contains source, tests, synthetic examples and documentation. Lo
 
 Version 0.1.6 adds whole-target-bound, uniform-box spatial TID scoring with project-persisted grids, a VTK 3D overlay, axis slices and VTI/CSV exports. See [voxel scoring](docs/VOXEL_SCORING.md) and [acceptance](docs/VOXEL_ACCEPTANCE.md). Version 0.1.5 adds automated fixed-cavity thickness scans; see [scan workflow](docs/SHIELDING_SCAN.md). This is a research application; independent dose validation is not complete.
 
+The [NIST PSTAR silicon benchmark](docs/PSTAR_BENCHMARK.md) compares accepted Geant4 proton TID with a thin-target estimate and checks source normalization. It covers a simple geometry and synthetic exposure.
+
 For this workstation, launch `dist/SpaceRad-0.1.3-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them. The same directory contains `spacerad_cli.exe` and a [CLI guide](docs/CLI.md).
 
 ## First workflow scope
