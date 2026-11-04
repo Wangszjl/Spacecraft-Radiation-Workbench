@@ -11,3 +11,5 @@ $taskResultsGuide=Join-Path $taskProjectRoot 'docs/RESULTS.md'
 if(Test-Path -LiteralPath $taskResultsGuide){Copy-Item -LiteralPath $taskResultsGuide -Destination (Join-Path $Destination 'RESULTS.md')}
 $taskScanGuide=Join-Path $taskProjectRoot 'docs/SHIELDING_SCAN.md'
 if(Test-Path -LiteralPath $taskScanGuide){Copy-Item -LiteralPath $taskScanGuide -Destination (Join-Path $Destination 'SHIELDING_SCAN.md')}
+$taskVoxelGuide=Join-Path $taskProjectRoot 'docs/VOXEL_SCORING.md'
+if(Test-Path -LiteralPath $taskVoxelGuide){Copy-Item -LiteralPath $taskVoxelGuide -Destination (Join-Path $Destination 'VOXEL_SCORING.md')}

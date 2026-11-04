@@ -16,6 +16,8 @@ on:
       - 'tools/check_cli_runtime.py'
       - 'tools/check_results_runtime.py'
       - 'tools/check_scan_runtime.py'
+      - 'tools/check_voxel_runtime.py'
+      - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
       - 'CMakeLists.txt'
       - 'cmake/**'
@@ -34,6 +36,8 @@ on:
       - 'tools/check_cli_runtime.py'
       - 'tools/check_results_runtime.py'
       - 'tools/check_scan_runtime.py'
+      - 'tools/check_voxel_runtime.py'
+      - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
       - 'CMakeLists.txt'
       - 'cmake/**'
@@ -116,6 +120,12 @@ jobs:
           --runtime build/worker-runtime/runtime.json
           --service-test build/worker-ci/test_scan_runtime
           --output-dir build/scan-acceptance
+      - name: Run real voxel scoring and conservation acceptance
+        run: >-
+          python tools/check_voxel_runtime.py
+          --cli build/worker-ci/spacerad_cli
+          --runtime build/worker-runtime/runtime.json
+          --output-dir build/voxel-acceptance
       - name: Preserve logs and numerical evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -138,5 +148,7 @@ jobs:
             build/scan-acceptance/**/*.json
             build/scan-acceptance/**/*.log
             build/scan-acceptance/**/*.csv
+            build/voxel-acceptance/**/*.json
+            build/voxel-acceptance/**/*.log
           if-no-files-found: warn
           retention-days: 14

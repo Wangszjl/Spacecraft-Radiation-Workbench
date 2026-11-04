@@ -2,6 +2,8 @@
 
 0.1.5 提供可嵌入的固定预算扫描服务、桌面窗口和 CLI。复用现有引擎的几何规划规则，通过 `AnalysisService` 逐项调用真实 Geant4 Worker；GUI / Qt Core 宿主不链接 Geant4。
 
+0.1.6 为工程加入可选 schema-v7 空间剂量体素计分，见[体素计分工作流](VOXEL_SCORING.md)。
+
 ## 桌面流程
 
 1. 打开工程，点击“自动屏蔽厚度扫描”。可先打开 `examples/projects/shielding-scan.json`，它使用明确标记的合成电子/质子谱。

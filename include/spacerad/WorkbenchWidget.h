@@ -22,12 +22,14 @@ public:
  // Opens an independent offline viewer; live project/service state is preserved.
  void showResults(const QString& baselineDirectory={},const QString& candidateDirectory={});
  void showShieldingScan(const QString& archiveDirectory={});
+ // Open a slice/table view for the currently accepted voxel field.
+ void showVoxelResult();
 signals:
  void resultReady(const QByteArray&);
  void projectChanged();
  void componentSelected(const QString& id);
 private:
  struct Impl;std::unique_ptr<Impl> d;
- void refresh();void invalidate();void showError(const QString&);void rebuildModelTree(const Project&);void updateEnvironment(const Project&);
+ void refresh();void invalidate();void showError(const QString&);void rebuildModelTree(const Project&);void updateEnvironment(const Project&);void updateVoxelControls(const Project&);
 };
 }

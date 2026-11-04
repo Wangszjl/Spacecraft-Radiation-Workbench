@@ -1,0 +1,167 @@
+{
+  "duration_s": 64.0,
+  "environment": {
+    "angular_convention": "omnidirectional_scalar",
+    "angular_distribution": "isotropic",
+    "metadata": {
+      "confidence_level": null,
+      "epoch_utc": null,
+      "interval_end_utc": null,
+      "interval_start_utc": null,
+      "model": null,
+      "model_version": null,
+      "orbit_source": null,
+      "percentile": null,
+      "statistical_mode": null
+    },
+    "quantity": "differential_flux",
+    "source": "SYNTHETIC manually specified differential environment; no orbit model executed",
+    "spectra": [
+      {
+        "energy_MeV": [
+          10.0,
+          20.0,
+          30.0
+        ],
+        "particle": "proton",
+        "provenance": {
+          "conversions": [],
+          "manual_definition": {
+            "angular_convention": "omnidirectional_scalar",
+            "quantity": "differential_flux",
+            "schema": "spacerad.manual-spectrum/1"
+          },
+          "source_file": null
+        },
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      {
+        "energy_MeV": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "particle": "e-",
+        "provenance": {
+          "conversions": [],
+          "manual_definition": {
+            "angular_convention": "omnidirectional_scalar",
+            "quantity": "differential_flux",
+            "schema": "spacerad.manual-spectrum/1"
+          },
+          "source_file": null
+        },
+        "values": [
+          4.0,
+          2.0,
+          0.0
+        ]
+      }
+    ],
+    "synthetic": true,
+    "unit": "cm-2 s-1 MeV-1"
+  },
+  "events": 10000,
+  "name": "Synthetic voxel scoring example (not mission data)",
+  "physics_list": "FTFP_BERT_EMZ",
+  "production_cut_mm": 0.1,
+  "provenance": {
+    "last_loaded_input": null,
+    "migration_origin": null,
+    "origin_schema": "scdat.radiation/2"
+  },
+  "schema": "scdat.radiation/7",
+  "seed": 19780503,
+  "source_radius_mm": 30.0,
+  "units": {
+    "energy": "MeV_per_particle",
+    "length": "mm",
+    "time": "s"
+  },
+  "volumes": [
+    {
+      "id": "Shield_Al",
+      "material": "G4_Al",
+      "center_mm": [
+        0,
+        0,
+        0
+      ],
+      "size_mm": [
+        30,
+        30,
+        30
+      ],
+      "wall_mm": 2,
+      "sensitive": false,
+      "parent": "",
+      "rotation_deg": [
+        0,
+        0,
+        0
+      ],
+      "visible": true,
+      "shape": "box"
+    },
+    {
+      "id": "OBC_Si",
+      "material": "G4_Si",
+      "center_mm": [
+        0,
+        0,
+        0
+      ],
+      "size_mm": [
+        20,
+        20,
+        20
+      ],
+      "wall_mm": 0,
+      "sensitive": true,
+      "parent": "",
+      "rotation_deg": [
+        0,
+        0,
+        0
+      ],
+      "visible": true,
+      "shape": "box"
+    }
+  ],
+  "geometry_contract": "scdat.analytic-assembly/1",
+  "instance_contract": "scdat.component-instances/1",
+  "assemblies": [],
+  "templates": [],
+  "instances": [],
+  "voxel_scoring": {
+    "schema": "scdat.voxel-scoring/1",
+    "volume_id": "OBC_Si",
+    "counts": [
+      2,
+      2,
+      2
+    ],
+    "edep_edges_MeV": [
+      0,
+      0.1,
+      0.5,
+      1,
+      2,
+      5,
+      10,
+      20,
+      50,
+      100,
+      500,
+      1000
+    ],
+    "quality": {
+      "min_nonzero_histories": 20,
+      "max_relative_error": 0.5
+    }
+  }
+}

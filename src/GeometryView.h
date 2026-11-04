@@ -10,6 +10,7 @@ public:
  void setProject(const Project&);
  void fit();
  void select(const std::string& id);
+ void setVoxelField(const Json* field);
 private:struct Impl;std::unique_ptr<Impl> d;
 };
 }

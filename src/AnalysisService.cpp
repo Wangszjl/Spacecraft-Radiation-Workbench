@@ -1,6 +1,7 @@
 #include "spacerad/AnalysisService.h"
 #include "Geometry.h"
 #include "runtime/ProjectFile.h"
+#include "runtime/VoxelStatistics.h"
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
@@ -55,6 +56,7 @@ AnalysisService::AnalysisService(QObject* parent):QObject(parent),d(new Impl){
    require(r.at("project_sha256")==digest(d->input).toStdString()&&r.at("worker").at("sha256")==d->workerHash.toStdString()&&r.at("histories")==d->histories&&r.at("project")==d->expectedProject,"Result does not match launch identity");
    const auto& audit=r.at("runtime_audit");require(audit.at("status")=="ready"&&audit.at("manifest_sha256")==d->manifestHash.toStdString()&&audit.at("build_context_sha256")==d->contextHash.toStdString(),"Result runtime differs from launch assets");
    std::set<std::string> expected;auto p=Project::fromJson(d->expectedProject);const auto compiled=spacerad::engine::compileGeometry(p);for(const auto& v:compiled.volumes)if(v.sensitive)expected.insert(v.id);
+   spacerad::engine::validateVoxelResult(p,r);
    if(!r.at("targets").is_array()||r.at("targets").size()!=expected.size())throw std::runtime_error("Sensitive target count differs: expected="+std::to_string(expected.size())+", actual="+std::to_string(r.at("targets").size())+", IDs="+Json(expected).dump());
    for(const auto& t:r.at("targets")){require(expected.erase(t.at("id").get<std::string>())==1,"Unexpected target ID");for(auto field:{"mass_kg","tid_Gy","tid_standard_error_Gy"}){double value=t.at(field);require(std::isfinite(value)&&value>=0,"Invalid target mass/dose/error");}require(t.at("mass_kg").get<double>()>0,"Target mass must be positive");}
    d->accepted=bytes;d->state="completed";emit completed(bytes);emit stateChanged(d->state);

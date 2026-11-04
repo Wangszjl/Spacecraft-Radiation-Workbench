@@ -6,6 +6,8 @@
 
 0.1.5增加 `plan-scan`、`scan` 和 `inspect-scan`，用于固定内腔的盒壳厚度扫描。设置、总抽样预算与取消语义见[自动屏蔽厚度扫描](SHIELDING_SCAN.md)。
 
+0.1.6 中普通 `run` 读取 schema-v7 `voxel_scoring` 工程，完成后返回含逐格 TID 的 `voxel_field` 和 `edep_spectra`。接受结果会按原始历史矩、敏感目标能量守恒与每格质量做服务端复验。要导出 ParaView 数据，仍需用同版本 Worker 的 `--export-voxels <project.json> <result.json> <new-dir>`；见[体素计分](VOXEL_SCORING.md)。
+
 ## 本机运行包
 
 在本机 `dist/SpaceRad-0.1.5-local/` 打开PowerShell。包内 `runtime.json` 已配置本机外置Geant4数据，以下命令可以直接使用：
