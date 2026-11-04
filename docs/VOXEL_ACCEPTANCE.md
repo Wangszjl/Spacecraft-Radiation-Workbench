@@ -23,6 +23,6 @@
 - 原环境编辑 31 项、部件 authoring 27 项；actual TKMaster 回归需在最终 SDK/宿主复建后记录。
 - headless clean CMake build/install，外部 consumer 编译并运行 voxel-scoring API；VTK 不参与。
 
-Worker workflow 已加入 Linux voxel runtime 检查，model-only Windows/Linux workflow 覆盖 Model API。尚未在本 turn 提交后运行 hosted actions；这里只记录本机结果。
+Worker workflow 已加入 Linux voxel runtime 检查，model-only Windows/Linux workflow 覆盖 Model API。本次提交 `1c7a3dafd721c8bcba992f5a95edfe6266136b6c` 的 GitHub Actions 均通过：Worker transport run `41823699063`（Linux / Geant4 11.4.3）和 Model build and SDK run `41823699032`。Worker CI 完成真实输运、固定腔体扫描及体素能量/剂量验收。
 
 所有实际剂量检查仅使用仓库合成谱及小型几何，不验证任何航天器任务预测。
