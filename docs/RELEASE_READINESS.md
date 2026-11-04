@@ -21,7 +21,8 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [x] Automated fixed-cavity box-shell thickness scans, per-species real transport, cancellation, dose/error curves, exports and offline reconstruction. Version 0.1.5: 39 CTests, 94 Windows CLI/integration checks including 19 service checks, and 19 final native UI checks. [Behavior](SHIELDING_SCAN.md), [acceptance](SHIELDING_SCAN_ACCEPTANCE.md).
 - [x] Spatial TID scoring for uniform sensitive boxes: project configuration, strict worker result validation, VTK overlay, slice view, and portable VTI/CSV export. Version 0.1.6 passed local and hosted Worker voxel validation. [Behavior](VOXEL_SCORING.md), [acceptance](VOXEL_ACCEPTANCE.md).
 - [ ] Extended spacecraft model import/assembly workflows, placement tools and full CAD interaction.
-- [ ] Reference environment/model execution and qualified environment examples; current first UI uses synthetic or externally supplied spectra.
+- [x] Run AE8MIN/AP8MIN on an idealized orbit, generate a traceable project and verify a two-target Geant4 shielding scan. [Reference workflow](AE8_AP8_EXAMPLE.md).
+- [ ] General ephemeris input, external model comparison and qualified mission environment examples. The UI opens the generated project; model execution remains external.
 - [ ] Calibrated device DDD/SEE workflows and response data.
 - [x] First external-reference TID regression: thin silicon sphere, 10/20 MeV protons, analytic entry and fluence checks, 38 Windows checks. [PSTAR benchmark](PSTAR_BENCHMARK.md).
 - [ ] Independent physical validation and geometry/dose sensitivity studies.

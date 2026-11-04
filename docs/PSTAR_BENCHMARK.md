@@ -31,6 +31,6 @@ Windows，Geant4 11.4.3，SpaceRad 0.1.6，38 项检查通过。误差为单倍�
 python tools/check_pstar_dose.py --cli dist/SpaceRad-0.1.6-local/spacerad_cli.exe --runtime dist/SpaceRad-0.1.6-local/runtime.json --output-dir reports/pstar-dose-new
 ```
 
-脚本生成四个工程和运行目录，保留原始结果、CLI/Worker 日志、解析值、偏差及结果 SHA-256。机器可读判定在 `summary.json`。参考点已固定，无需运行时联网；Linux Worker CI 也执行此脚本。
+脚本生成四个工程和运行目录，保留原始结果、CLI/Worker 日志、解析值、偏差及结果 SHA-256。机器可读判定在 `summary.json`。参考点已固定，无需运行时联网；[Linux Worker CI](https://github.com/Wangszjl/Spacecraft-Radiation-Workbench/actions/runs/41835552243) 也已通过此基准。
 
 薄靶估算忽略减速造成的阻止本领变化、散射和次级粒子逃逸；产生阈值会影响次级粒子的产生和局部沉积。这个比较使用外部参考表，未验证 Geant4 与该参考之间的模型或基础数据独立性。真实任务谱、复杂整星屏蔽、器件 DDD/SEE 和束流实测剂量仍需另做验证。

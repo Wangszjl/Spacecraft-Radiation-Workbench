@@ -18,6 +18,8 @@ Version 0.1.6 adds whole-target-bound, uniform-box spatial TID scoring with proj
 
 The [NIST PSTAR silicon benchmark](docs/PSTAR_BENCHMARK.md) compares accepted Geant4 proton TID with a thin-target estimate and checks source normalization. It covers a simple geometry and synthetic exposure.
 
+The [AE8/AP8 orbit example](docs/AE8_AP8_EXAMPLE.md) runs IRBEM on an idealized orbit, generates a desktop-ready project and checks a two-target shielding scan.
+
 For this workstation, launch `dist/SpaceRad-0.1.3-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them. The same directory contains `spacerad_cli.exe` and a [CLI guide](docs/CLI.md).
 
 ## First workflow scope
