@@ -22,6 +22,7 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [x] Spatial TID scoring for uniform sensitive boxes: project configuration, strict worker result validation, VTK overlay, slice view, and portable VTI/CSV export. Version 0.1.6 passed local and hosted Worker voxel validation. [Behavior](VOXEL_SCORING.md), [acceptance](VOXEL_ACCEPTANCE.md).
 - [ ] Extended spacecraft model import/assembly workflows, placement tools and full CAD interaction.
 - [x] Notional spacecraft TID benchmark: 16 material volumes, six sensitive parts, two bus-wall thicknesses and 35 audit checks across two sampling budgets. [Evidence and unresolved interior statistics](SPACECRAFT_TID_BENCHMARK.md).
+- [x] Fixed-budget spectral stratification with exact exposure reconstruction and a real 8-million-history equal-budget comparison. [Scope and remaining zero-hit bands](STRATIFIED_TID.md).
 - [ ] Establish adequate statistics for the shielded interior and repeat with representative imported CAD geometry.
 - [x] Run AE8MIN/AP8MIN on an idealized orbit, generate a traceable project and verify a two-target Geant4 shielding scan. [Reference workflow](AE8_AP8_EXAMPLE.md).
 - [x] Import timestamped GEO/GEI ephemerides, reproduce a published SpacePy point and cross-check four RADBELT points. Transport a spectrum from a public Van Allen Probe A trajectory segment through demo scan and voxel projects. [External ephemeris evidence](AE8_AP8_EPHEMERIS.md).
