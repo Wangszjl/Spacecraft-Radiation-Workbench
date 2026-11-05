@@ -1,0 +1,5 @@
+{
+  "schema": "spacerad.shielding-settings/1",
+  "shell_id": "Bus_Al",
+  "thicknesses_mm": [0.8, 2.0]
+}

@@ -155,7 +155,7 @@ def verify_scan(cli, job, project, manifest, settings, band_flux, check, near):
     for case in report["cases"]:
         result = read_json(job / case["directory"] / "result.json")
         expected = math.pi * (project["source_radius_mm"] / 10)**2 * band_flux[case["particle"]] * duration
-        check(f"{case['directory']}: exposure applied once and both targets scored",
+        check(f"{case['directory']}: exposure applied once and all targets scored",
               near(result["expected_primaries"], expected) and
               {t["id"] for t in result["targets"]} == expected_targets)
     curves = {(r["thickness_mm"], r["target_id"]) for r in report["curves"]}

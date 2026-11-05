@@ -1,0 +1,54 @@
+{
+  "schema": "scdat.radiation/5",
+  "name": "Notional spacecraft TID benchmark",
+  "duration_s": 680.896,
+  "source_radius_mm": 390,
+  "events": 150000,
+  "seed": 48151623,
+  "physics_list": "FTFP_BERT_EMZ",
+  "production_cut_mm": 0.1,
+  "units": {"energy":"MeV_per_particle","length":"mm","time":"s"},
+  "provenance": {"origin_schema":"scdat.radiation/5","last_loaded_input":null,"migration_origin":null},
+  "geometry_contract": "scdat.box-assembly/1",
+  "instance_contract": "scdat.component-instances/1",
+  "assemblies": [
+    {"id":"Bus","parent":"","center_mm":[0,0,0],"rotation_deg":[6,-8,12],"visible":true},
+    {"id":"Avionics","parent":"Bus","center_mm":[-89,-47,-20],"rotation_deg":[0,0,7],"visible":true},
+    {"id":"Payload","parent":"Bus","center_mm":[87,42,16],"rotation_deg":[0,0,-9],"visible":true},
+    {"id":"Power","parent":"Bus","center_mm":[-67,69,-55],"rotation_deg":[0,0,-5],"visible":true}
+  ],
+  "volumes": [
+    {"id":"Bus_Al","material":"G4_Al","center_mm":[0,0,0],"size_mm":[350,270,210],"wall_mm":0.8,"sensitive":false,"parent":"Bus","rotation_deg":[0,0,0],"visible":true},
+    {"id":"Deck_Al","material":"G4_Al","center_mm":[0,0,-79],"size_mm":[330,250,3],"wall_mm":0,"sensitive":false,"parent":"Bus","rotation_deg":[0,0,0],"visible":true},
+    {"id":"Avionics_Al","material":"G4_Al","center_mm":[0,0,0],"size_mm":[125,95,50],"wall_mm":0.5,"sensitive":false,"parent":"Avionics","rotation_deg":[0,0,0],"visible":true},
+    {"id":"Board_SiO2","material":"G4_SILICON_DIOXIDE","center_mm":[0,0,-4],"size_mm":[112,82,1.6],"wall_mm":0,"sensitive":false,"parent":"Avionics","rotation_deg":[0,0,0],"visible":true},
+    {"id":"OBC_Si","material":"G4_Si","center_mm":[-30,0,0],"size_mm":[50,70,2],"wall_mm":0,"sensitive":true,"parent":"Avionics","rotation_deg":[0,0,0],"visible":true},
+    {"id":"Memory_Si","material":"G4_Si","center_mm":[30,0,0],"size_mm":[50,60,2],"wall_mm":0,"sensitive":true,"parent":"Avionics","rotation_deg":[0,0,0],"visible":true},
+    {"id":"Payload_Al","material":"G4_Al","center_mm":[0,0,0],"size_mm":[130,112,65],"wall_mm":0.6,"sensitive":false,"parent":"Payload","rotation_deg":[0,0,0],"visible":true},
+    {"id":"Payload_Si","material":"G4_Si","center_mm":[0,0,2],"size_mm":[105,92,4],"wall_mm":0,"sensitive":true,"parent":"Payload","rotation_deg":[0,0,0],"visible":true},
+    {"id":"Power_Si","material":"G4_Si","center_mm":[0,0,0],"size_mm":[95,78,4],"wall_mm":0,"sensitive":true,"parent":"Power","rotation_deg":[0,0,0],"visible":true},
+    {"id":"Power_Base_Al","material":"G4_Al","center_mm":[0,0,-7],"size_mm":[105,88,2],"wall_mm":0,"sensitive":false,"parent":"Power","rotation_deg":[0,0,0],"visible":true}
+  ],
+  "templates": [{
+    "id":"SolarWing","schema":"scdat.component-template/1","units":{"length":"mm","angle":"deg"},"assemblies":[],
+    "volumes":[
+      {"id":"Backplate_Al","material":"G4_Al","center_mm":[0,0,-1.6],"size_mm":[172,214,2],"wall_mm":0,"sensitive":false,"parent":"","rotation_deg":[0,0,0],"visible":true},
+      {"id":"Cell_Si","material":"G4_Si","center_mm":[0,0,0],"size_mm":[166,206,0.4],"wall_mm":0,"sensitive":true,"parent":"","rotation_deg":[0,0,0],"visible":true},
+      {"id":"Cover_SiO2","material":"G4_SILICON_DIOXIDE","center_mm":[0,0,0.5],"size_mm":[168,208,0.2],"wall_mm":0,"sensitive":false,"parent":"","rotation_deg":[0,0,0],"visible":true}
+    ]
+  }],
+  "instances": [
+    {"id":"Wing_L","template_id":"SolarWing","parent":"Bus","center_mm":[-265,0,-5],"rotation_deg":[0,-15,0],"visible":true,"material_overrides":{}},
+    {"id":"Wing_R","template_id":"SolarWing","parent":"Bus","center_mm":[265,0,-5],"rotation_deg":[0,15,0],"visible":true,"material_overrides":{}}
+  ],
+  "environment": {
+    "synthetic":true,
+    "source":"Synthetic placeholder only; replace with the verified AE8/AP8 workflow for the published benchmark",
+    "quantity":"differential_flux","unit":"cm-2 s-1 MeV-1",
+    "angular_distribution":"isotropic","angular_convention":"omnidirectional_scalar","metadata":{},
+    "spectra":[
+      {"particle":"e-","energy_MeV":[0.1,1],"values":[1,1],"provenance":{"conversions":[],"source_file":null}},
+      {"particle":"proton","energy_MeV":[1,30],"values":[1,1],"provenance":{"conversions":[],"source_file":null}}
+    ]
+  }
+}

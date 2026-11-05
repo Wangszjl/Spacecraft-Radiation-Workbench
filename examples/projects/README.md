@@ -2,6 +2,8 @@
 
 To generate a project from actual legacy trapped-belt model output, see the [AE8/AP8 orbit example](../../docs/AE8_AP8_EXAMPLE.md). Its orbit is idealized.
 
+`spacecraft-tid-assembly.json` is a notional spacecraft with a bus, local housings and two template-derived solar wings. It opens with a placeholder synthetic spectrum. The [spacecraft TID benchmark](../../docs/SPACECRAFT_TID_BENCHMARK.md) documents replacement with model fluxes from a public trajectory, shielding scans and statistical screening.
+
 `voxel-scoring.json` is a schema-v7, 2×2×2 synthetic TID example. It subdivides one homogeneous silicon sensitive box surrounded by an aluminum box shell. Use the [voxel workflow guide](../../docs/VOXEL_SCORING.md). It is intended for software verification only.
 
 `shielding-scan.json` is a separate small Si sphere / Al box-shell example for the [automated scan workflow](../../docs/SHIELDING_SCAN.md). It uses the same synthetic spectra, a 40 mm source radius and 10,000 histories per incident species/thickness. The paired settings file is `examples/scans/three-thicknesses.json`. The two flux/fluence examples below retain their original three-target geometry and normalization.
