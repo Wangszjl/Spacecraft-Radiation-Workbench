@@ -1,4 +1,5 @@
 #include "spacerad/Results.h"
+#include "spacerad/ImportanceReview.h"
 #include <spacerad/engine/SourceSampling.h>
 #include "Geometry.h"
 #include "runtime/ProjectFile.h"
@@ -134,11 +135,13 @@ ArchivedRun loadArchivedRun(const QString& directory) {
 }
 Json ArchivedRun::summary() const {
     require(!result_.is_null(), "No loaded archive");
-    return {{"directory", directory_.toUtf8().toStdString()}, {"name", project_.name}, {"histories", project_.events},
+    Json summary={{"directory", directory_.toUtf8().toStdString()}, {"name", project_.name}, {"histories", project_.events},
         {"synthetic", project_.synthetic}, {"project_sha256", projectHash_}, {"result_sha256", resultHash_},
         {"engine_version", result_.at("engine_version")}, {"expected_primaries", result_.at("expected_primaries")},
         {"targets", result_.at("targets")}, {"capabilities", result_.at("capability_status")},
         {"verification", "offline_pair_consistency_only_not_producer_authentication"}};
+    if(!project_.sourceSampling.is_null())summary["importance_review"]=importanceReview(project_,result_);
+    return summary;
 }
 Json compareRuns(const ArchivedRun& a, const ArchivedRun& b) {
     Json out = {{"schema", "spacerad.comparison/1"}, {"baseline", a.summary()}, {"candidate", b.summary()},

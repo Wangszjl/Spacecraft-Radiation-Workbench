@@ -24,6 +24,7 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [x] Notional spacecraft TID benchmark: 16 material volumes, six sensitive parts, two bus-wall thicknesses and 35 audit checks across two sampling budgets. [Evidence and unresolved interior statistics](SPACECRAFT_TID_BENCHMARK.md).
 - [x] Fixed-budget spectral stratification with exact exposure reconstruction and a real 8-million-history equal-budget comparison. [Scope and remaining zero-hit bands](STRATIFIED_TID.md).
 - [x] Opt-in schema-v8 energy/species importance sampling, conditional moment reconstruction and real equal-budget spacecraft comparison; 43 local CTests and 7 real packaged checks. [Evidence and statistical limits](IMPORTANCE_SAMPLING.md).
+- [x] Live and historical weighted-result statistics viewer, shared Qt-free review API, CLI summaries and precise exports; 44 local CTests and 25 native workflow checks. [Review behavior](IMPORTANCE_REVIEW.md).
 - [ ] Establish adequate statistics for the shielded interior and repeat with representative imported CAD geometry.
 - [x] Run AE8MIN/AP8MIN on an idealized orbit, generate a traceable project and verify a two-target Geant4 shielding scan. [Reference workflow](AE8_AP8_EXAMPLE.md).
 - [x] Import timestamped GEO/GEI ephemerides, reproduce a published SpacePy point and cross-check four RADBELT points. Transport a spectrum from a public Van Allen Probe A trajectory segment through demo scan and voxel projects. [External ephemeris evidence](AE8_AP8_EPHEMERIS.md).

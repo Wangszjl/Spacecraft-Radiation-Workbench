@@ -1,5 +1,6 @@
 #include <spacerad/Authoring.h>
 #include <spacerad/Environment.h>
+#include <spacerad/ImportanceReview.h>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -8,6 +9,8 @@
 int main(int argc, char** argv) {
     try {
         auto project = spacerad::Project::demo();
+        if(spacerad::importanceReview(project,spacerad::Json::object()).at("status")!="not_applicable")
+            throw std::runtime_error("Installed importance review API failed");
         if (argc == 2) {
             std::ifstream input(argv[1]);
             if (!input) throw std::runtime_error("Cannot read example project");

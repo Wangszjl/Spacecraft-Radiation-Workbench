@@ -1,5 +1,7 @@
 #include "ResultsDialog.h"
+#include "ImportanceDialog.h"
 #include "spacerad/Results.h"
+#include "spacerad/ImportanceReview.h"
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QDirIterator>
@@ -41,6 +43,7 @@ class ResultsDialog final : public QDialog {
     QLabel *status, *identity, *notice;
     QTableWidget* table;
     QPushButton *csv, *json;
+    QPushButton *importanceA,*importanceB;
 public:
     ResultsDialog(QWidget* parent, const QString& baseline, const QString& candidate) : QDialog(parent) {
         setObjectName("spaceradResultsDialog");
@@ -83,6 +86,16 @@ public:
         table->setHorizontalHeaderLabels({tr("敏感区"), tr("匹配状态"), tr("条件核对"), "A Gy", "A SE Gy", "B Gy", "B SE Gy", "B−A Gy", "B/A", tr("非零历史 A / B")});
         table->setEditTriggers(QAbstractItemView::NoEditTriggers); table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents); layout->addWidget(table, 1);
         auto* exports = new QHBoxLayout;
+        importanceA=new QPushButton(tr("A 加权统计明细"),this);
+        importanceA->setObjectName("spaceradArchiveImportanceA");exports->addWidget(importanceA);
+        importanceB=new QPushButton(tr("B 加权统计明细"),this);
+        importanceB->setObjectName("spaceradArchiveImportanceB");exports->addWidget(importanceB);
+        connect(importanceA,&QPushButton::clicked,this,[this]{
+            if(a)showImportanceDialog(this,a->project(),a->result());
+        });
+        connect(importanceB,&QPushButton::clicked,this,[this]{
+            if(b)showImportanceDialog(this,b->project(),b->result());
+        });
         csv = new QPushButton(tr("导出对比 CSV"), this); csv->setObjectName("spaceradComparisonCsv"); exports->addWidget(csv);
         json = new QPushButton(tr("导出核对摘要 JSON"), this); json->setObjectName("spaceradComparisonJson"); exports->addWidget(json); exports->addStretch();
         auto* close = new QPushButton(tr("关闭"), this); exports->addWidget(close); layout->addLayout(exports);
@@ -128,6 +141,8 @@ private:
         catch (const std::exception& e) { render(); status->setText(tr("载入 %1 失败：%2").arg(baselineSide ? "A" : "B", QString::fromUtf8(e.what()))); }
     }
     void render() {
+        importanceA->setEnabled(a&&!a->project().sourceSampling.is_null());
+        importanceB->setEnabled(b&&!b->project().sourceSampling.is_null());
         notice->clear();
         report = nullptr; table->setRowCount(0); csv->setEnabled(false); json->setEnabled(false);
         identity->clear(); status->setText(tr("请选择 A 任务；可再载入 B 对比。核对不认证文件生成者，也不验证剂量物理模型。"));
@@ -156,6 +171,12 @@ private:
             report = a->summary();
             status->setText(tr("A 已载入；仅完成离线文件一致性核对。零命中不表示零风险；DDD / SEE 与独立剂量物理验证尚未完成。"));
             for (const auto& t : a->result().at("targets")) append({s(t.at("id")), tr("仅查看 A"), {}, s(t.at("tid_Gy")), s(t.at("tid_standard_error_Gy")), {}, {}, {}, {}, s(t.at("nonzero_histories"))});
+        }
+        for(auto side:{&a,&b})if(*side&&!(*side)->project().sourceSampling.is_null()){
+            const auto stats=importanceReview((*side)->project(),(*side)->result());
+            const int total=int(stats.at("targets").size()),passing=stats.at("passing_targets");
+            status->setText(status->text()+tr("\n%1 加权来源筛查：%2/%3 靶区通过；查看统计明细了解零／低命中区域。通过筛查不代表物理验证。")
+                .arg(side==&a?"A":"B").arg(passing).arg(total));
         }
         json->setEnabled(true);
     }

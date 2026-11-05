@@ -1,5 +1,6 @@
 #include "spacerad/AnalysisService.h"
 #include "spacerad/Results.h"
+#include "spacerad/ImportanceReview.h"
 #include "spacerad/ShieldingScan.h"
 #include "Geometry.h"
 #include "runtime/ProjectFile.h"
@@ -226,6 +227,7 @@ int analyze(QCoreApplication& app, const QCommandLineParser& parser, Reporter& r
                 {"engine_version", result.at("engine_version")}, {"expected_primaries", result.at("expected_primaries")},
                 {"targets", result.at("targets")}, {"capabilities", result.at("capability_status")}};
             if(result.contains("source_importance")) summary["source_importance"]=result.at("source_importance");
+            if(result.contains("source_importance")) summary["importance_review"]=importanceReview(Project::fromJson(result.at("project")),result);
             terminal = true;
             reporter.event("completed", std::move(summary));
             app.exit(0);

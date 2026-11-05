@@ -13,3 +13,7 @@ $taskScanGuide=Join-Path $taskProjectRoot 'docs/SHIELDING_SCAN.md'
 if(Test-Path -LiteralPath $taskScanGuide){Copy-Item -LiteralPath $taskScanGuide -Destination (Join-Path $Destination 'SHIELDING_SCAN.md')}
 $taskVoxelGuide=Join-Path $taskProjectRoot 'docs/VOXEL_SCORING.md'
 if(Test-Path -LiteralPath $taskVoxelGuide){Copy-Item -LiteralPath $taskVoxelGuide -Destination (Join-Path $Destination 'VOXEL_SCORING.md')}
+foreach($taskImportanceName in @('IMPORTANCE_SAMPLING.md','IMPORTANCE_REVIEW.md')){
+ $taskImportanceGuide=Join-Path (Join-Path $taskProjectRoot 'docs') $taskImportanceName
+ if(Test-Path -LiteralPath $taskImportanceGuide){Copy-Item -LiteralPath $taskImportanceGuide -Destination (Join-Path $Destination $taskImportanceName)}
+}

@@ -10,6 +10,8 @@
 
 ## 本机运行包
 
+加权 v8 工程的 `run` 完成事件与 `inspect-result` 摘要增加 `importance_review`。它逐靶列出来源分组的剂量、条件历史数、低／零命中区域和经验统计筛查，语义与[桌面统计明细](IMPORTANCE_REVIEW.md)一致。筛查结果不替代完整剂量精度或外部物理验证。
+
 在本机 `dist/SpaceRad-0.1.5-local/` 打开PowerShell。包内 `runtime.json` 已配置本机外置Geant4数据，以下命令可以直接使用：
 
 ```powershell
