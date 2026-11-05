@@ -1,4 +1,5 @@
 #include "spacerad/Results.h"
+#include <spacerad/engine/SourceSampling.h>
 #include "Geometry.h"
 #include "runtime/ProjectFile.h"
 #include <QCryptographicHash>
@@ -50,7 +51,8 @@ bool near(double a, double b) { return std::isfinite(a) && std::isfinite(b) && s
 Json sourceSettings(const Project& p) {
     Json spectra = Json::object();
     for (const auto& s : p.spectra) spectra[s.particle] = {{"energy", s.energy}, {"values", s.values}, {"interpolation", s.interpolation}};
-    return {{"quantity", engine::quantityName(p.quantity)}, {"duration_s", p.duration}, {"source_radius_mm", p.radius}, {"spectra", spectra}};
+    return {{"quantity", engine::quantityName(p.quantity)}, {"duration_s", p.duration}, {"source_radius_mm", p.radius},
+            {"spectra", spectra},{"importance_sampling",p.sourceSampling}};
 }
 std::map<std::string, Json> targets(const ArchivedRun& run) {
     std::map<std::string, Json> result;
@@ -103,6 +105,7 @@ ArchivedRun loadArchivedRun(const QString& directory) {
     // last_loaded_input records the historical filename, so relocate directories freely,
     // but retain the canonical project.json snapshot filename.
     require(r.at("project") == p.toJson() && r.at("histories") == p.events, "Archive result/project identity mismatch");
+    engine::validateImportanceResult(p,r);
     require(near(number(r.at("expected_primaries")), p.expectedPrimaries()), "Archive source normalization mismatch");
     const auto& audit = r.at("runtime_audit");
     require(audit.at("status") == "ready" && sha(audit.at("manifest_sha256")) && sha(audit.at("build_context_sha256")) && sha(r.at("worker").at("sha256")), "Archive runtime identities missing");

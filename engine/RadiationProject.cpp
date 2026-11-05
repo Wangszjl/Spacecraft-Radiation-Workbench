@@ -3,6 +3,7 @@
 #include "Geometry.h"
 #include "Materials.h"
 #include "Instances.h"
+#include <spacerad/engine/SourceSampling.h>
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
@@ -32,7 +33,7 @@ void validateArtifact(const Json& artifact) {
 }
 void validateProvenance(const Json& p) {
     require(p.is_object(),"Project provenance must be an object");
-    require(p.at("origin_schema")=="scdat.radiation/1"||p.at("origin_schema")=="scdat.radiation/2"||p.at("origin_schema")=="scdat.radiation/3"||p.at("origin_schema")=="scdat.radiation/4"||p.at("origin_schema")=="scdat.radiation/5"||p.at("origin_schema")=="scdat.radiation/6"||p.at("origin_schema")=="scdat.radiation/7","Invalid provenance origin_schema");
+    require(p.at("origin_schema")=="scdat.radiation/1"||p.at("origin_schema")=="scdat.radiation/2"||p.at("origin_schema")=="scdat.radiation/3"||p.at("origin_schema")=="scdat.radiation/4"||p.at("origin_schema")=="scdat.radiation/5"||p.at("origin_schema")=="scdat.radiation/6"||p.at("origin_schema")=="scdat.radiation/7"||p.at("origin_schema")=="scdat.radiation/8","Invalid provenance origin_schema");
     validateArtifact(p.at("last_loaded_input"));validateArtifact(p.at("migration_origin"));
 }
 bool utcTimestamp(const std::string& value) {
@@ -158,11 +159,24 @@ void Project::validate() const {
     validateMaterialSnapshot(*this);
     validateGeometry(*this);
     validateVoxels(*this);
+    if(!sourceSampling.is_null()){
+        require(voxelScoring.is_null(),"Weighted sampling is not supported with voxel scoring");
+        const auto sampling=ImportanceSampling::fromJson(sourceSampling);
+        std::set<std::string> species;
+        for(const auto& spectrum:spectra)require(species.insert(spectrum.particle).second,"Weighted source species must be unique");
+        if(!sampling.proposalSpecies.empty()){
+            std::set<std::string> configured;
+            for(const auto& row:sampling.proposalSpecies)configured.insert(row.first);
+            require(configured==species,"Importance proposal must name every incident species exactly once");
+        }
+    }
 }
 Project Project::fromJson(const Json& j) {
     bool legacy=j.at("schema")=="scdat.radiation/1";
     bool voxels=j.at("schema")=="scdat.radiation/7";
-    bool analytic=j.at("schema")=="scdat.radiation/6"||voxels;
+    bool importance=j.at("schema")=="scdat.radiation/8";
+    bool analytic=j.at("schema")=="scdat.radiation/6"||voxels||importance;
+    require(importance?j.contains("source_sampling")&&!j.at("source_sampling").is_null():!j.contains("source_sampling"),"Source importance sampling requires project schema v8");
     require(voxels?j.contains("voxel_scoring")&&!j.at("voxel_scoring").is_null():!j.contains("voxel_scoring"),"Voxel scoring requires project schema v7");
     bool instanced=j.at("schema")=="scdat.radiation/5"||analytic;
     if(instanced)require(j.at("instance_contract")=="scdat.component-instances/1"&&j.at("templates").is_array()&&j.at("instances").is_array(),"Unsupported instance contract or node arrays");
@@ -178,6 +192,7 @@ Project Project::fromJson(const Json& j) {
     require(j.at("events").get<std::int64_t>()>=2&&j.at("events").get<std::int64_t>()<=100000000,"Events outside 2..100000000");
     require(j.at("seed").get<std::int64_t>()>=1&&j.at("seed").get<std::int64_t>()<=2147483646,"Seed outside 1..2147483646");
     Project p;
+    if(importance)p.sourceSampling=j.at("source_sampling");
     if(voxels)p.voxelScoring=j.at("voxel_scoring");
     if(pinned)p.materialSnapshot=j.at("material_snapshot");
     if(instanced){
@@ -237,12 +252,13 @@ Project Project::fromJson(const Json& j) {
 }
 Json Project::toJson() const {
     validate();
-    bool analytic=hasAnalyticGeometry(*this)||!voxelScoring.is_null();bool instanced=!templates.empty()||!instances.empty()||analytic;
+    bool analytic=hasAnalyticGeometry(*this)||!voxelScoring.is_null()||!sourceSampling.is_null();bool instanced=!templates.empty()||!instances.empty()||analytic;
     bool pinned=!materialSnapshot.is_null();bool assembly=hasAssemblyGeometry(*this)||pinned||instanced;
-    Json j={{"schema",!voxelScoring.is_null()?"scdat.radiation/7":analytic?"scdat.radiation/6":instanced?"scdat.radiation/5":pinned?"scdat.radiation/4":assembly?"scdat.radiation/3":"scdat.radiation/2"},{"name",name},{"duration_s",duration},
+    Json j={{"schema",!sourceSampling.is_null()?"scdat.radiation/8":!voxelScoring.is_null()?"scdat.radiation/7":analytic?"scdat.radiation/6":instanced?"scdat.radiation/5":pinned?"scdat.radiation/4":assembly?"scdat.radiation/3":"scdat.radiation/2"},{"name",name},{"duration_s",duration},
         {"source_radius_mm",radius},{"events",events},{"seed",seed},{"production_cut_mm",cut},{"physics_list",physics}};
     j["units"]={{"length","mm"},{"energy","MeV_per_particle"},{"time","s"}};j["provenance"]=provenance;
     if(!voxelScoring.is_null())j["voxel_scoring"]=voxelScoring;
+    if(!sourceSampling.is_null())j["source_sampling"]=sourceSampling;
     if(instanced){j["instance_contract"]="scdat.component-instances/1";j["templates"]=Json::array();j["instances"]=Json::array();
         for(const auto& t:templates)j["templates"].push_back(templateToJson(t));for(const auto& i:instances)j["instances"].push_back(instanceToJson(i));}
     if(pinned){j["material_contract"]="scdat.nist-materials/1";j["material_snapshot"]=materialSnapshot;}

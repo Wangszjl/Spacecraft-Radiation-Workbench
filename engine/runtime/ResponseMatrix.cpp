@@ -11,7 +11,7 @@ int integer(const Json& j,const char* k,int lo,int hi){const auto& v=j.at(k);req
 double number(const Json& v,double lo=0,double hi=1e300){require(v.is_number(),"number required");double x=v.get<double>();require(std::isfinite(x)&&x>=lo&&x<=hi,"number outside finite range");return x;}
 Json physical(Json p){p.erase("provenance");return p;}
 void validateSource(const Project& p,const ResponseOptions& o){
-    p.validate();require(p.voxelScoring.is_null(),"whole-target response only; disable voxel scoring");std::set<std::string> actual;
+    p.validate();require(p.voxelScoring.is_null()&&p.sourceSampling.is_null(),"whole-target response requires an unweighted source and disabled voxel scoring");std::set<std::string> actual;
     for(const auto& s:p.spectra){require(actual.insert(s.particle).second,"duplicate incident species");require(s.interpolation=="bin_constant"&&s.energy==o.edges,"source must use exactly the cache's constant energy bins");}
     require(actual==std::set<std::string>(o.particles.begin(),o.particles.end()),"source particle set differs from response options");
 }

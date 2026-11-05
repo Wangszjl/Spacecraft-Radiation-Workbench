@@ -49,7 +49,7 @@ Json BatchOptions::toJson()const{return {{"schema","scdat.radiation-batch/1"},{"
     {"max_histories",maxHistories},{"max_parallel",maxParallel},{"max_seconds",maxSeconds},
     {"target_relative_error",targetRelativeError},{"min_nonzero_histories",minNonzeroHistories},{"min_completed_batches",minCompletedBatches}};}
 std::vector<BatchEntry> planBatches(const Project& p,const BatchOptions& raw){
-    auto o=BatchOptions::fromJson(raw.toJson());p.validate();require(p.events==o.maxHistories,"project events must equal max_histories");
+    auto o=BatchOptions::fromJson(raw.toJson());p.validate();require(p.sourceSampling.is_null(),"Batch pooling does not support per-history importance weights");require(p.events==o.maxHistories,"project events must equal max_histories");
     // A final single event is joined to the preceding batch so every variance has n>=2.
     std::vector<BatchEntry> entries;int first=0;
     while(first<o.maxHistories){

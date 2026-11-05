@@ -21,7 +21,7 @@ ShieldingScanOptions ShieldingScanOptions::fromJson(const Json& j){
 }
 Json ShieldingScanOptions::toJson()const{return {{"schema","scdat.radiation-shielding-scan/1"},{"shell_id",shellId},{"thicknesses_mm",thicknesses},{"batch",batch.toJson()}};}
 std::vector<ShieldingCase> planShieldingScan(const Project& base,const ShieldingScanOptions& raw){
-    auto o=ShieldingScanOptions::fromJson(raw.toJson());base.validate();auto batches=planBatches(base,o.batch);
+    auto o=ShieldingScanOptions::fromJson(raw.toJson());base.validate();require(base.sourceSampling.is_null(),"Legacy batch shielding scans do not support importance sampling; run direct strata instead");auto batches=planBatches(base,o.batch);
     auto shell=std::find_if(base.volumes.begin(),base.volumes.end(),[&](const Volume& v){return v.id==o.shellId;});
     require(shell!=base.volumes.end()&&shell->shape=="box"&&shell->wall>0&&!shell->sensitive,"select a direct, non-sensitive hollow box volume");
     std::vector<std::string> particles;for(const auto& s:base.spectra){require(s.particle=="e-"||s.particle=="proton","only incident electrons and protons are supported");

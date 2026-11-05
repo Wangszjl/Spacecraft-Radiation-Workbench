@@ -53,6 +53,7 @@ struct ChildGroup {
 };
 }
 static Json runBatchJobInternal(const LoadedProject& loaded,const BatchOptions& options,const QString& requested,const Json& runtime,const BatchArchive* source,const std::vector<int>* replay=nullptr,const QString& externalCancel={}){
+    if(!loaded.project.sourceSampling.is_null())throw std::runtime_error("Weighted sampling is not supported by the legacy batch runner");
     auto plan=planBatches(loaded.project,options);const auto& project=loaded.project;
     QString directory=QFileInfo(requested).absoluteFilePath();require(!QFileInfo::exists(directory),"output directory already exists");
     QElapsedTimer timer;timer.start();auto started=QDateTime::currentDateTimeUtc().toString(Qt::ISODate);

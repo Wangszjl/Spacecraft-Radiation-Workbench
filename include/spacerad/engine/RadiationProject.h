@@ -56,6 +56,7 @@ struct Project {
     Json provenance = defaultProjectProvenance();
     Json materialSnapshot = nullptr; // v4: pinned NIST definitions; legacy resolves at run
     Json voxelScoring = nullptr; // v7: exact homogeneous sensitive-box subdivision
+    Json sourceSampling = nullptr; // v8: opt-in full-spectrum importance sampling
     double duration = 86400, radius = 500, cut = 0.1;
     int events = 100000;
     long seed = 19780503;

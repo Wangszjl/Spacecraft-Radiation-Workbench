@@ -123,6 +123,7 @@ void WorkbenchWidget::updateEnvironment(const Project& p){
  d->environment->setText(tr("%1\n%2 · %3 · 全向标量、各向同性 · CSV列：energy_MeV,differential_%4").arg(text(p.environmentSource),p.synthetic?tr("合成环境"):tr("用户提供谱，未认证"),text(engine::quantityUnit(p.quantity)),p.quantity==engine::SpectrumQuantity::Flux?"flux":"fluence"));
  d->normalization->setText(tr("积分合计：%1 %2；源球半径：%3 mm；暴露：%4 s（%5）；期望初级粒子数：%6 = π × R(cm)² × 谱积分%7。抽样历史数：%8。\n换算使用当前暴露时长逐项乘/除，并记录历史；调整谱会清除旧结果。未执行 AP8/AE8 等轨道环境模型。")
  .arg(QString::number(p.integratedSpectrum(),'g',12),p.quantity==engine::SpectrumQuantity::Flux?"cm-2 s-1":"cm-2",QString::number(p.radius,'g',12),QString::number(p.duration,'g',12),p.quantity==engine::SpectrumQuantity::Flux?tr("参与归一化"):tr("不再乘时长"),QString::number(p.expectedPrimaries(),'g',12),p.quantity==engine::SpectrumQuantity::Flux?" × t(s)":"",QString::number(p.events)));
+ if(!p.sourceSampling.is_null())d->normalization->setText(d->normalization->text()+tr("\n已启用全谱重要性抽样。剂量使用逐事件权重；抽样份额表仍显示原始物理谱。"));
 }
 void WorkbenchWidget::updateVoxelControls(const Project& p){
  const bool wasRefreshing=d->refreshing;d->refreshing=true;QSignalBlocker enabled(d->voxelEnabled),volumeBlock(d->voxelVolume),edgeBlock(d->voxelEdges),hitBlock(d->voxelMinHits),rseBlock(d->voxelMaxRse);

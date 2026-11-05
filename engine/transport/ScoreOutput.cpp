@@ -1,6 +1,7 @@
 #include "TransportState.h"
 #include "runtime/VoxelStatistics.h"
 #include "Voxels.h"
+#include <spacerad/engine/SourceSampling.h>
 #include <Randomize.hh>
 namespace spacerad::engine::transport {
 Json buildScores(const State& state) {
@@ -40,6 +41,43 @@ Json buildScores(const State& state) {
         {"outward_directions",audit.outwardDirections},
         {"expected_mean_inward_cos_theta",2.0/3.0},{"expected_mean_inward_cos_theta_squared",0.5},
         {"scope","Sampling diagnostics; not an external physics validation"}};
+    if(!project.sourceSampling.is_null()){
+        const auto cfg=ImportanceSampling::fromJson(project.sourceSampling);
+        const int tail=audit.tailHistories, body=project.events-tail;
+        const double w=cfg.bodyWeight(),v=cfg.tailWeight();
+        double sum=0,sum2=0;
+        for(const auto& [particle,total]:audit.species){
+            const int high=audit.tailHistoriesBySpecies.at(particle),low=total-high;
+            const double speciesWeight=cfg.speciesWeight(particle,project);
+            sum+=speciesWeight*(low*w+high*v);
+            sum2+=speciesWeight*speciesWeight*(low*w*w+high*v*v);
+        }
+        Json support=Json::object();
+        for(const auto& [id,score]:state.scores){
+            Json speciesSupport=Json::object();
+            for(const auto& [particle,regions]:state.importanceSupport.at(id)){
+                Json byRegion=Json::object();int region=0;
+                for(const char* name:{"body","tail"}){
+                    const auto& raw=regions[region++];Json moments=Json::array();
+                    for(const auto& m:raw.score)moments.push_back(Json{{"count",m.count},{"nonzero_histories",m.nonzero},{"mean_MeV",m.mean},{"m2_MeV2",m.m2}});
+                    byRegion[name]={{"histories",raw.histories},{"nonzero_histories",raw.nonzero[0]},{"score_moments",moments}};
+                }
+                speciesSupport[particle]=std::move(byRegion);
+            }
+            support[id]=std::move(speciesSupport);
+        }
+        result["source_importance"]={{"schema","spacerad.source-importance-result/1"},
+            {"configuration",project.sourceSampling},{"proposal_tail_fraction",cfg.proposalTailFraction()},
+            {"proposal_species_fractions",cfg.proposalSpeciesFractions(project)},
+            {"body_histories",body},{"tail_histories",tail},{"sum_weights",sum},{"sum_squared_weights",sum2},
+            {"weight_ess",sum*sum/sum2},{"mean_physical_primary_energy_MeV",audit.likelihoodWeightedEnergy.mean},
+            {"mean_physical_primary_energy_standard_error_MeV",audit.likelihoodWeightedEnergy.standardError()},
+            {"tail_histories_by_species",audit.tailHistoriesBySpecies},
+            {"target_support",support}};
+        result["source_diagnostics"]["mean_sampled_primary_energy_MeV"]=audit.energy.mean;
+        result["scoring"]="TID from likelihood-weighted ionizing energy per event, including zero histories; empirical Monte Carlo uncertainty";
+        validateImportanceResult(project,result);
+    }
     if(state.voxelPhysical){Json moments=Json::array();
         auto raw=[](const Moments& m){return Json{{"count",m.count},{"nonzero_histories",m.nonzero},{"mean_MeV",m.mean},{"m2_MeV2",m.m2}};};
         for(const auto& cell:state.voxelMoments)moments.push_back({{"ionizing",raw(cell[0])},{"total",raw(cell[1])},{"nonionizing",raw(cell[2])}});

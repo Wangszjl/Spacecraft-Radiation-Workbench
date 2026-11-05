@@ -21,7 +21,7 @@ QByteArray readFile(const QString& path){
 LoadedProject loadProjectFile(const QString& path,bool refreshMaterialSnapshot){
     auto bytes=readFile(path);auto input=Json::parse(bytes.toStdString());
     auto view=input;
-    if(refreshMaterialSnapshot&&(input.at("schema")=="scdat.radiation/4"||input.at("schema")=="scdat.radiation/5"||input.at("schema")=="scdat.radiation/6"||input.at("schema")=="scdat.radiation/7")&&input.contains("material_contract")&&input.at("material_contract")=="scdat.nist-materials/1"){
+    if(refreshMaterialSnapshot&&(input.at("schema")=="scdat.radiation/4"||input.at("schema")=="scdat.radiation/5"||input.at("schema")=="scdat.radiation/6"||input.at("schema")=="scdat.radiation/7"||input.at("schema")=="scdat.radiation/8")&&input.contains("material_contract")&&input.at("material_contract")=="scdat.nist-materials/1"){
         if(input.at("schema")=="scdat.radiation/4")view["schema"]="scdat.radiation/3";
         view.erase("material_contract");view.erase("material_snapshot");
     }

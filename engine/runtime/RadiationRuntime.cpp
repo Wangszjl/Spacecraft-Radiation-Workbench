@@ -78,6 +78,11 @@ Json addProvenance(Json result,const Project& project,const QByteArray& input,co
         {"time_multiplier_applied",project.quantity==SpectrumQuantity::Flux}};
     result["capability_status"]={{"tid","research_software_numerical_checks_only"},{"external_physics_validation","not_completed"},
         {"ddd","not_implemented"},{"see","not_implemented"},{"environment_model_execution","not_implemented"}};
+    if(!project.sourceSampling.is_null()){
+        result["requested_configuration"]["source_sampling"]=project.sourceSampling;
+        result["effective_configuration"]["source_sampling"]=project.sourceSampling;
+        result["capability_status"]["source_importance"]="implemented_weighted_primary_energy";
+    }
     result["validation_status"]={{"software_regression","See version-specific regression evidence"},
         {"external_physics_validation","not_completed"},{"environment",project.synthetic?"synthetic":"user_supplied_not_certified"}};
     result["limitations"]={"Forward MC, serial; boxes, hollow boxes, solid cylinders and spheres; no curved shells or CAD transport","NIEL deposit is not calibrated device DDD or SEE failure probability",
@@ -87,6 +92,8 @@ Json addProvenance(Json result,const Project& project,const QByteArray& input,co
 void writeResult(const QString& path,const Json& j) {
     QSaveFile f(path);if(!f.open(QIODevice::WriteOnly)) throw std::runtime_error("Cannot create output file");
     auto bytes=j.dump(2);
-    if(f.write(bytes.data(),qint64(bytes.size()))!=qint64(bytes.size()) || !f.commit()) throw std::runtime_error("Output commit failed");
+    if(f.write(bytes.data(),qint64(bytes.size()))!=qint64(bytes.size()))
+        throw std::runtime_error("Output write failed ("+std::to_string(bytes.size())+" bytes): "+f.errorString().toStdString());
+    if(!f.commit())throw std::runtime_error("Output commit failed ("+std::to_string(bytes.size())+" bytes): "+f.errorString().toStdString());
 }
 }

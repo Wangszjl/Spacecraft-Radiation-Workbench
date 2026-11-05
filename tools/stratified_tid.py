@@ -87,6 +87,7 @@ def make_plan(project, settings, config, source_sha):
     require(0 < len(by_particle) == len(spectra) and by_particle.keys() <= {"e-", "proton"} and
             by_particle.keys() == config["species"].keys(), "Provide one stratum specification per unique incident species")
     require(project.get("voxel_scoring") is None, "Stratified scan does not combine voxel fields")
+    require(project.get("source_sampling") is None, "Use the physical source for fixed stratification")
     thicknesses = settings["thicknesses_mm"]
     require(settings["schema"] == "spacerad.shielding-settings/1" and 2 <= len(thicknesses) <= 64, "Invalid scan settings")
     quantity = project["environment"]["quantity"]

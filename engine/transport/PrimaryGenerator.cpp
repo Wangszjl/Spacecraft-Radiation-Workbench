@@ -1,4 +1,5 @@
 #include "TransportState.h"
+#include <spacerad/engine/SourceSampling.h>
 #include <G4VUserPrimaryGeneratorAction.hh>
 #include <G4ParticleGun.hh>
 #include <G4ParticleTable.hh>
@@ -6,19 +7,47 @@
 #include <Randomize.hh>
 #include <algorithm>
 #include <cmath>
+#include <optional>
 namespace spacerad::engine::transport {
 class Source final:public G4VUserPrimaryGeneratorAction {
     State& state;
     const Project& p;
     G4ParticleGun gun{1};
+    std::optional<ImportanceSampling> sampling;
 public:
-    explicit Source(State& s):state(s),p(s.project) {}
+    explicit Source(State& s):state(s),p(s.project) {
+        if(!p.sourceSampling.is_null()) {
+            sampling=ImportanceSampling::fromJson(p.sourceSampling);
+            for(const auto& spectrum:p.spectra){
+                state.sourceAudit.tailHistoriesBySpecies[spectrum.particle]=0;
+                state.sourceAudit.species[spectrum.particle]=0;
+            }
+        }
+    }
     void GeneratePrimaries(G4Event* event) override {
-        double selector=G4UniformRand()*p.integratedSpectrum();
+        double selector=G4UniformRand();
         const Spectrum* chosen=&p.spectra.back();
-        for(const auto& s:p.spectra) { selector-=s.integral; if(selector<0) { chosen=&s; break; } }
+        if(sampling){
+            const auto selected=sampling->sampleSpecies(selector,p);
+            chosen=&p.spectra.at(selected.first);
+            state.eventWeight=selected.second;
+        }else{
+            selector*=p.integratedSpectrum();
+            for(const auto& s:p.spectra) { selector-=s.integral; if(selector<0) { chosen=&s; break; } }
+        }
         gun.SetParticleDefinition(G4ParticleTable::GetParticleTable()->FindParticle(chosen->particle));
-        double energy = chosen->sample(G4UniformRand());
+        double quantile=G4UniformRand();
+        if(sampling){
+            const auto sample=sampling->sample(quantile);
+            quantile=sample.physicalQuantile;
+            state.eventWeight*=sample.weight;
+            state.tailEvent=sample.tail;
+            if(sample.tail) ++state.sourceAudit.tailHistories;
+        }
+        double energy = chosen->sample(quantile);
+        state.eventParticle=chosen->particle;
+        if(sampling)state.sourceAudit.tailHistoriesBySpecies.try_emplace(chosen->particle,0);
+        if(state.tailEvent)++state.sourceAudit.tailHistoriesBySpecies[chosen->particle];
         gun.SetParticleEnergy(energy*MeV);
         // Uniform sphere position; inward Lambert cosine direction: mu=sqrt(U).
         double z=2*G4UniformRand()-1, az=2*pi*G4UniformRand();
@@ -32,6 +61,7 @@ public:
         gun.SetParticleMomentumDirection(direction);
         // Diagnostics must never draw random numbers: preserve the P0 stream.
         auto& audit=state.sourceAudit;
+        audit.likelihoodWeightedEnergy.add(state.eventWeight*energy);
         const auto actualPosition=gun.GetParticlePosition()/(p.radius*mm);
         const auto actualDirection=gun.GetParticleMomentumDirection();
         double actualMu=-actualDirection.dot(actualPosition.unit());

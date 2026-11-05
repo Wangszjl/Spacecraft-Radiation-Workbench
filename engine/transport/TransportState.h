@@ -16,17 +16,26 @@ struct Score {
     double mass = 0;
     int primaryEntryHistories = 0;
 };
+struct ImportanceSupport {
+    int histories = 0;
+    std::array<int,3> nonzero{};
+    std::array<Moments,3> score;
+};
 struct SourceAudit {
     Moments z, mu, mu2, energy;
+    Moments likelihoodWeightedEnergy;
     std::array<int,10> muBins{};
     std::map<std::string,int> species;
     double maximumPositionError = 0, maximumDirectionNormError = 0;
     double maximumCosineMappingError = 0;
     int outwardDirections = 0;
+    int tailHistories = 0;
+    std::map<std::string,int> tailHistoriesBySpecies;
 };
 struct State {
     const Project& project;
     std::map<std::string,Score> scores;
+    std::map<std::string,std::map<std::string,std::array<ImportanceSupport,2>>> importanceSupport;
     std::map<std::string,std::array<double,3>> event;
     std::set<std::string> primaryEntries;
     SourceAudit sourceAudit;
@@ -40,6 +49,9 @@ struct State {
     std::map<std::string,std::vector<std::int64_t>> edepBins;
     std::map<std::string,std::int64_t> edepOverflow;
     int eventId = 0;
+    double eventWeight = 1;
+    bool tailEvent = false;
+    std::string eventParticle;
     explicit State(const Project& p):project(p) {}
 };
 

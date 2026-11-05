@@ -22,6 +22,7 @@ The [AE8/AP8 orbit example](docs/AE8_AP8_EXAMPLE.md) runs IRBEM on an idealized 
 
 The [notional spacecraft TID benchmark](docs/SPACECRAFT_TID_BENCHMARK.md) applies that trajectory workflow to a six-target assembly and compares two bus thicknesses and two sampling budgets.
 The [energy-stratified scan tool](docs/STRATIFIED_TID.md) reallocates histories by energy band while preserving the original exposure and auditing each archived run.
+The [full-spectrum importance sampler](docs/IMPORTANCE_SAMPLING.md) adds event likelihood weights and per-species energy-region audits; interior spacecraft statistics remain unresolved.
 
 For this workstation, launch `dist/SpaceRad-0.1.3-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them. The same directory contains `spacerad_cli.exe` and a [CLI guide](docs/CLI.md).
 

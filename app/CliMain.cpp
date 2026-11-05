@@ -225,6 +225,7 @@ int analyze(QCoreApplication& app, const QCommandLineParser& parser, Reporter& r
                 {"result_schema", result.at("schema")}, {"histories", result.at("histories")},
                 {"engine_version", result.at("engine_version")}, {"expected_primaries", result.at("expected_primaries")},
                 {"targets", result.at("targets")}, {"capabilities", result.at("capability_status")}};
+            if(result.contains("source_importance")) summary["source_importance"]=result.at("source_importance");
             terminal = true;
             reporter.event("completed", std::move(summary));
             app.exit(0);

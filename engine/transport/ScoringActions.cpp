@@ -23,6 +23,20 @@ public:
         for(auto& entry:s.scores) {
             if(s.primaryEntries.count(entry.first)) ++entry.second.primaryEntryHistories;
             auto energies=s.event[entry.first]; // includes zero-deposit histories
+            // Split weighted full-history dose into disjoint proposal regions.
+            if(!s.project.sourceSampling.is_null()){
+                auto& region=s.importanceSupport[entry.first][s.eventParticle];
+                for(int i=0;i<2;++i){
+                    const bool selected=(i==1)==s.tailEvent;
+                    auto& support=region[i];
+                    if(selected)++support.histories;
+                    for(int k=0;k<3;++k){
+                        if(selected){if(energies[k]>0)++support.nonzero[k];support.score[k].add(energies[k]*s.eventWeight);}
+                    }
+                }
+            }
+            // Weight the complete primary history once, including all descendants.
+            if(s.eventWeight!=1) for(auto& energy:energies) energy*=s.eventWeight;
             entry.second.ionizing.add(energies[0]);
             entry.second.total.add(energies[1]);
             entry.second.nonionizing.add(energies[2]);

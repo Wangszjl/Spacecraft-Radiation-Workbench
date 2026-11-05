@@ -90,7 +90,11 @@ public:
             if(hasAnalyticGeometry(state.project)){G4ThreeVector low,high;solid->BoundingLimits(low,high);
                 audit["geant4_local_bounds_mm"]={low.x()/mm,high.x()/mm,low.y()/mm,high.y()/mm,low.z()/mm,high.z()/mm};}
             audit["density_kg_m3"]=mat->GetDensity()/(kg/m3);
-            if(v.sensitive) state.scores[v.id].mass=mass;
+            if(v.sensitive){
+                state.scores[v.id].mass=mass;
+                if(!state.project.sourceSampling.is_null())
+                    for(const auto& spectrum:state.project.spectra)state.importanceSupport[v.id][spectrum.particle];
+            }
             if(!state.project.voxelScoring.is_null()&&voxelSpec(state.project.voxelScoring).volumeId==v.id){
                 auto layout=voxelLayout(state.project);auto spec=voxelSpec(state.project.voxelScoring);auto d=layout.at("spacing_mm").get<Vector3>();
                 auto* cellSolid=new G4Box(v.id+"__voxel_solid",d[0]/2*mm,d[1]/2*mm,d[2]/2*mm);
