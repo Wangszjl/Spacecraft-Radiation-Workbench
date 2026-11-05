@@ -120,6 +120,7 @@ if(BUILD_TESTING)
  endif()
 
  add_test(NAME independent_layout COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_project_layout.py")
+ add_test(NAME ae8ap8_ephemeris_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_ae8ap8_ephemeris.py")
  # These tests exercise the model library without Qt even in a full build.
  set(_model_tests test_contact_evidence test_diagnostics test_geometry test_instances test_materials
      test_mesh_spatial test_part_relations test_preview_mesh test_project test_shapes)

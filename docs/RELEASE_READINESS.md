@@ -22,7 +22,8 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [x] Spatial TID scoring for uniform sensitive boxes: project configuration, strict worker result validation, VTK overlay, slice view, and portable VTI/CSV export. Version 0.1.6 passed local and hosted Worker voxel validation. [Behavior](VOXEL_SCORING.md), [acceptance](VOXEL_ACCEPTANCE.md).
 - [ ] Extended spacecraft model import/assembly workflows, placement tools and full CAD interaction.
 - [x] Run AE8MIN/AP8MIN on an idealized orbit, generate a traceable project and verify a two-target Geant4 shielding scan. [Reference workflow](AE8_AP8_EXAMPLE.md).
-- [ ] General ephemeris input, external model comparison and qualified mission environment examples. The UI opens the generated project; model execution remains external.
+- [x] Import timestamped GEO/GEI ephemerides, reproduce a published SpacePy point and cross-check four RADBELT points. Transport a spectrum from a public Van Allen Probe A trajectory segment through demo scan and voxel projects. [External ephemeris evidence](AE8_AP8_EPHEMERIS.md).
+- [ ] Qualified mission environment cases and integrated desktop model execution. The UI opens generated projects; the model runs externally.
 - [ ] Calibrated device DDD/SEE workflows and response data.
 - [x] First external-reference TID regression: thin silicon sphere, 10/20 MeV protons, analytic entry and fluence checks, 38 Windows checks. [PSTAR benchmark](PSTAR_BENCHMARK.md).
 - [ ] Independent physical validation and geometry/dose sensitivity studies.

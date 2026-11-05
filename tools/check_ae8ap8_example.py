@@ -1,4 +1,4 @@
-"""Check saved AE8/AP8 inputs and a completed SpaceRad scan, without SpacePy."""
+"""Check saved AE8/AP8 inputs and optionally a completed SpaceRad scan, without SpacePy."""
 import argparse
 import csv
 import hashlib
@@ -6,6 +6,8 @@ import json
 import math
 from pathlib import Path
 import subprocess
+
+from ae8ap8_ephemeris import EARTH_RADIUS_KM, parse_ephemeris
 
 
 def read_json(path):
@@ -19,10 +21,13 @@ def rows(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for key in ("environment-dir", "scan-dir", "cli"):
-        parser.add_argument(f"--{key}", type=Path, required=True)
+    parser.add_argument("--environment-dir", type=Path, required=True)
+    parser.add_argument("--scan-dir", type=Path)
+    parser.add_argument("--cli", type=Path)
     args = parser.parse_args()
-    envdir, job = args.environment_dir.resolve(), args.scan_dir.resolve()
+    if bool(args.scan_dir) != bool(args.cli):
+        parser.error("--scan-dir and --cli must be used together")
+    envdir = args.environment_dir.resolve()
     manifest = read_json(envdir / "environment-manifest.json")
     checks = []
 
@@ -31,25 +36,52 @@ def main():
             raise ValueError(name)
         checks.append(name)
 
-    def artifact(name, identity):
+    def artifact(name, identity, source_name=None):
         path = envdir / name
         data = path.read_bytes()
-        check(f"{name}: byte identity", identity == {"file_name": name, "size_bytes": len(data),
+        check(f"{name}: byte identity", identity == {"file_name": source_name or name, "size_bytes": len(data),
               "sha256": hashlib.sha256(data).hexdigest()})
         return path
 
     def near(a, b):
         return math.isclose(a, b, rel_tol=1e-11)
 
-    check("model manifest schema", manifest["schema"] == "spacerad.ae8ap8-example/1")
+    external = manifest["schema"] == "spacerad.ae8ap8-ephemeris/1"
+    check("model manifest schema", external or manifest["schema"] == "spacerad.ae8ap8-example/1")
     project = read_json(artifact("project.json", manifest["project"]))
-    settings = read_json(artifact("scan-settings.json", manifest["scan_settings"]))
+    settings = read_json(artifact("scan-settings.json", manifest["scan_settings"])) if manifest["scan_settings"] else None
     orbit = rows(artifact("orbit.csv", manifest["orbit"]))
     env, n, duration = project["environment"], manifest["samples"], manifest["duration_s"]
-    check("full equal-time orbit", len(orbit) == n and duration == project["duration_s"] and
-          all(near(float(row["offset_s"]), (i + 0.5) * duration / n) and
-              near(math.hypot(*(float(row[f"{axis}_GEI_Re"]) for axis in "xyz")), manifest["orbit_radius_Re"])
-              for i, row in enumerate(orbit)))
+    if external:
+        source = manifest["input_ephemeris"]
+        original = artifact("input-ephemeris.csv", source, source["file_name"])
+        times, offsets, positions = parse_ephemeris(original.read_bytes(), manifest["input_position_unit"], manifest["max_gap_s"])
+        frame = manifest["frame"]
+        check("declared coordinate frame and Earth radius", frame in ("GEO", "GEI") and manifest["earth_radius_km"] == EARTH_RADIUS_KM)
+        utc = [t.isoformat(timespec="microseconds").replace("+00:00", "Z") for t in times]
+        check("normalized trajectory matches the input ephemeris",
+              len(orbit) == len(times) == n and duration == offsets[-1] == project["duration_s"] and
+              utc[0] == manifest["epoch_utc"] and utc[-1] == manifest["interval_end_utc"] and
+              all(row["utc"] == stamp and float(row["offset_s"]) == offset and
+                  tuple(float(row[f"{axis}_{frame}_Re"]) for axis in "xyz") == point
+                  for row, stamp, offset, point in zip(orbit, utc, offsets, positions)))
+        if manifest["base_project"]:
+            identity = manifest["base_project"]
+            base = read_json(artifact("input-project.json", identity, identity["file_name"]))
+            excluded = {"name", "duration_s", "environment"}
+            check("base geometry and run settings unchanged", {k: v for k, v in base.items() if k not in excluded} ==
+                  {k: v for k, v in project.items() if k not in excluded})
+    else:
+        check("full equal-time orbit", len(orbit) == n and duration == project["duration_s"] and
+              all(near(float(row["offset_s"]), (i + 0.5) * duration / n) and
+                  near(math.hypot(*(float(row[f"{axis}_GEI_Re"]) for axis in "xyz")), manifest["orbit_radius_Re"])
+                  for i, row in enumerate(orbit)))
+
+    def average(values):
+        if external:
+            return math.fsum((offsets[i+1] - offsets[i]) * (a + b) / 2
+                             for i, (a, b) in enumerate(zip(values, values[1:]))) / duration
+        return math.fsum(values) / n
     check("model flux conventions", env["synthetic"] is False and env["quantity"] == "differential_flux"
           and env["unit"] == "cm-2 s-1 MeV-1" and env["angular_convention"] == "omnidirectional_scalar"
           and env["angular_distribution"] == "isotropic")
@@ -75,13 +107,21 @@ def main():
             for values, a, b in zip(per_bin, flux, flux[1:]):
                 values.append(a - b)
         check(f"{label}: all raw bins reconstruct project values",
-              all(near(v, math.fsum(raw_bin) / n / w) for v, raw_bin, w in zip(spec["values"], per_bin, width)))
-        total = math.fsum(math.fsum(b) / n for b in per_bin)
+              all(near(v, average(raw_bin) / w) for v, raw_bin, w in zip(spec["values"], per_bin, width)))
+        total = math.fsum(average(b) for b in per_bin)
         check(f"{label}: manifest flux and fluence", total > 0 and near(total, entry["mean_band_flux_cm-2_s-1"])
               and near(total * duration, entry["band_fluence_cm-2"]))
         band_flux[particle] = total
 
-    proc = subprocess.run([str(args.cli.resolve()), "inspect-scan", "--job", str(job)],
+    report = {"passed": True, "checks": checks, "band_flux_cm-2_s-1": band_flux}
+    if args.scan_dir:
+        report["curves"] = verify_scan(args.cli.resolve(), args.scan_dir.resolve(), project, manifest, settings, band_flux, check, near)
+    print(json.dumps(report, indent=2, allow_nan=False))
+
+
+def verify_scan(cli, job, project, manifest, settings, band_flux, check, near):
+    env, duration = project["environment"], manifest["duration_s"]
+    proc = subprocess.run([str(cli), "inspect-scan", "--job", str(job)],
                           capture_output=True, text=True, encoding="utf-8", timeout=60)
     events = [json.loads(line) for line in proc.stdout.splitlines() if line.strip()]
     check("accepted offline scan archive", proc.returncode == 0 and events and events[-1]["type"] == "archived-scan"
@@ -93,16 +133,21 @@ def main():
         defaults = {"parent": "", "rotation_deg": [0, 0, 0], "shape": "box", "visible": True}
         return [defaults | v for v in p["volumes"]]
 
-    check("scan used the generated geometry, environment and settings",
+    archived_settings = read_json(job / "scan-settings.json")
+    check("scan used the generated geometry and environment",
           archived_project["provenance"]["last_loaded_input"] == manifest["project"] and
           all(archived_env[k] == v for k, v in env.items() if k != "metadata") and
           all(archived_env["metadata"][k] == v for k, v in env["metadata"].items()) and
           geometry(archived_project) == geometry(project) and
-          all(archived_project[k] == project[k] for k in ("duration_s", "source_radius_mm")) and
-          read_json(job / "scan-settings.json") == settings)
+          all(archived_project[k] == project[k] for k in ("duration_s", "source_radius_mm")))
+    if settings is not None and settings != archived_settings:
+        raise ValueError("Scan settings differ from the generated settings")
+    settings = archived_settings
     report = read_json(job / "scan-result.json")
     expected_cases = {(t, p) for t in settings["thicknesses_mm"] for p in band_flux}
-    expected_targets = {v["id"] for v in project["volumes"] if v["sensitive"]}
+    expected_targets = {r["target_id"] for r in report["curves"]}
+    if not manifest.get("base_project"):
+        check("both demonstration targets scored", expected_targets == {"OBC_Si", "Payload_Si"})
     check("all thickness/species cases completed", report["status"] == "completed" and
           len(report["cases"]) == len(expected_cases) and
           {(c["thickness_mm"], c["particle"]) for c in report["cases"]} == expected_cases and
@@ -116,8 +161,7 @@ def main():
     curves = {(r["thickness_mm"], r["target_id"]) for r in report["curves"]}
     check("all thickness/target dose rows", len(report["curves"]) == len(curves)
           and curves == {(t, target) for t in settings["thicknesses_mm"] for target in expected_targets})
-    print(json.dumps({"passed": True, "checks": checks, "band_flux_cm-2_s-1": band_flux,
-                      "curves": report["curves"]}, indent=2, allow_nan=False))
+    return report["curves"]
 
 
 if __name__ == "__main__":
