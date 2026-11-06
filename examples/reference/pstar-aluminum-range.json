@@ -1,0 +1,49 @@
+{
+  "schema": "spacerad.pstar-range-reference/1",
+  "material": "ALUMINUM",
+  "matno": "013",
+  "source": "https://physics.nist.gov/PhysRefData/Star/Text/PSTAR-t.html",
+  "request": {
+    "endpoint": "https://physics.nist.gov/cgi-bin/Star/ap_table-t.pl",
+    "prog": "PSTAR",
+    "matno": "013",
+    "Energies": [
+      1,
+      5,
+      10,
+      20,
+      50,
+      100
+    ]
+  },
+  "retrieved_date": "2026-11-06",
+  "csda_range_unit": "g/cm2",
+  "rows": [
+    {
+      "energy_MeV": 1,
+      "csda_range_g_cm2": 0.003945
+    },
+    {
+      "energy_MeV": 5,
+      "csda_range_g_cm2": 0.05188
+    },
+    {
+      "energy_MeV": 10,
+      "csda_range_g_cm2": 0.1705
+    },
+    {
+      "energy_MeV": 20,
+      "csda_range_g_cm2": 0.5748
+    },
+    {
+      "energy_MeV": 50,
+      "csda_range_g_cm2": 2.928
+    },
+    {
+      "energy_MeV": 100,
+      "csda_range_g_cm2": 10.01
+    }
+  ],
+  "scope": "CSDA mean path estimate; not a hard cutoff, secondary-dose bound or spacecraft dose validation",
+  "source_response_sha256": "b441289753cad72659009de9395ede2e90f4159fb267a3f5c576b8c649186407"
+}

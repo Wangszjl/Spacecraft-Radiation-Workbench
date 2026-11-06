@@ -7,6 +7,7 @@
 #include "ShieldingDialog.h"
 #include "VoxelDialog.h"
 #include "ImportanceDialog.h"
+#include "SourceSamplingDialog.h"
 #include "spacerad/VoxelExport.h"
 #include "spacerad/Environment.h"
 #include "spacerad/VoxelScoring.h"
@@ -118,6 +119,20 @@ d->status->setText(d->status->text()+tr("\n加权来源统计筛查：%1/%2 个�
      auto r=Json::parse(d->accepted.toStdString());
      showImportanceDialog(this,Project::fromJson(r.at("project")),r,d->selectedId);
  }catch(const std::exception& e){showError(QString::fromUtf8(e.what()));}});
+ auto* configureSampling=new QPushButton(tr("配置重要性抽样"),parameters);
+ configureSampling->setObjectName("spaceradConfigureImportance");form->addRow(configureSampling);
+ connect(configureSampling,&QPushButton::clicked,this,[this]{
+     QPointer<WorkbenchWidget> alive(this);
+     try{
+         auto snapshot=project();const auto revision=d->revision;
+         auto edited=editSourceSamplingDialog(this,snapshot);
+         if(!alive)return;
+         if(edited){
+             if(revision!=d->revision)throw std::runtime_error("Project changed while sampling settings were open; edit was not applied");
+             setProject(*edited);d->tabs->setCurrentIndex(2);
+         }
+     }catch(const std::exception& e){if(alive)showError(QString::fromUtf8(e.what()));}
+ });
  refresh();
 }
 WorkbenchWidget::~WorkbenchWidget(){for(auto* child:findChildren<QObject*>())disconnect(child,nullptr,this,nullptr);disconnect(d->service,nullptr,this,nullptr);delete d->service;d->service=nullptr;}
@@ -138,7 +153,15 @@ void WorkbenchWidget::updateEnvironment(const Project& p){
  d->environment->setText(tr("%1\n%2 · %3 · 全向标量、各向同性 · CSV列：energy_MeV,differential_%4").arg(text(p.environmentSource),p.synthetic?tr("合成环境"):tr("用户提供谱，未认证"),text(engine::quantityUnit(p.quantity)),p.quantity==engine::SpectrumQuantity::Flux?"flux":"fluence"));
  d->normalization->setText(tr("积分合计：%1 %2；源球半径：%3 mm；暴露：%4 s（%5）；期望初级粒子数：%6 = π × R(cm)² × 谱积分%7。抽样历史数：%8。\n换算使用当前暴露时长逐项乘/除，并记录历史；调整谱会清除旧结果。未执行 AP8/AE8 等轨道环境模型。")
  .arg(QString::number(p.integratedSpectrum(),'g',12),p.quantity==engine::SpectrumQuantity::Flux?"cm-2 s-1":"cm-2",QString::number(p.radius,'g',12),QString::number(p.duration,'g',12),p.quantity==engine::SpectrumQuantity::Flux?tr("参与归一化"):tr("不再乘时长"),QString::number(p.expectedPrimaries(),'g',12),p.quantity==engine::SpectrumQuantity::Flux?" × t(s)":"",QString::number(p.events)));
- if(!p.sourceSampling.is_null())d->normalization->setText(d->normalization->text()+tr("\n已启用全谱重要性抽样。剂量使用逐事件权重；抽样份额表仍显示原始物理谱。"));
+ if(!p.sourceSampling.is_null()){
+ QStringList proposal;
+ if(p.sourceSampling.contains("proposal_species_fractions"))for(const auto& row:p.sourceSampling.at("proposal_species_fractions").items())
+     proposal<<QString::fromStdString(row.key())+": "+QString::number(row.value().get<double>()*100,'g',6)+"%";
+ d->normalization->setText(d->normalization->text()+tr("\n已启用全谱重要性抽样：原谱混合率 f=%1，最高能尾部概率 τ=%2；粒子提议：%3。剂量使用逐事件权重；谱表显示物理份额。")
+ .arg(QString::number(p.sourceSampling.at("physical_fraction").get<double>(),'g',7),
+      QString::number(p.sourceSampling.at("tail_fraction").get<double>(),'g',7),
+      proposal.isEmpty()?tr("保留物理粒子份额"):proposal.join(" / ")));
+ }
 }
 void WorkbenchWidget::updateVoxelControls(const Project& p){
  const bool wasRefreshing=d->refreshing;d->refreshing=true;QSignalBlocker enabled(d->voxelEnabled),volumeBlock(d->voxelVolume),edgeBlock(d->voxelEdges),hitBlock(d->voxelMinHits),rseBlock(d->voxelMaxRse);

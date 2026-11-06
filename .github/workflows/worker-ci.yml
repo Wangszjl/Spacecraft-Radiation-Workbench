@@ -22,6 +22,8 @@ on:
       - 'tools/enable_importance.py'
       - 'tools/run_importance_scan.py'
       - 'tools/compare_importance_scans.py'
+      - 'tools/run_energy_response.py'
+      - 'tools/check_energy_response_scaling.py'
       - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
       - 'CMakeLists.txt'
@@ -47,6 +49,8 @@ on:
       - 'tools/enable_importance.py'
       - 'tools/run_importance_scan.py'
       - 'tools/compare_importance_scans.py'
+      - 'tools/run_energy_response.py'
+      - 'tools/check_energy_response_scaling.py'
       - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
       - 'CMakeLists.txt'
@@ -148,6 +152,11 @@ jobs:
           --cli build/worker-ci/spacerad_cli
           --runtime build/worker-runtime/runtime.json
           --output-dir build/importance-acceptance
+      - name: Verify narrow-band energy responses and fluence scaling
+        run: |
+          python tools/run_energy_response.py run --cli build/worker-ci/spacerad_cli --project examples/projects/spacecraft-tid-assembly.json --settings examples/scans/spacecraft-bus-thickness.json --runtime build/worker-runtime/runtime.json --output-dir build/energy-response-acceptance --histories 2000 --parallel 2
+          python tools/run_energy_response.py inspect --cli build/worker-ci/spacerad_cli --runtime build/worker-runtime/runtime.json --output-dir build/energy-response-acceptance
+          python tools/check_energy_response_scaling.py --study-dir build/energy-response-acceptance --cli build/worker-ci/spacerad_cli --runtime build/worker-runtime/runtime.json --output-dir build/energy-scaling-acceptance
       - name: Preserve logs and numerical evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -176,5 +185,10 @@ jobs:
             build/pstar-acceptance/**/*.log
             build/importance-acceptance/**/*.json
             build/importance-acceptance/**/*.log
+            build/energy-response-acceptance/**/*.json
+            build/energy-response-acceptance/**/*.log
+            build/energy-response-acceptance/*.csv
+            build/energy-scaling-acceptance/**/*.json
+            build/energy-scaling-acceptance/**/*.log
           if-no-files-found: warn
           retention-days: 14
