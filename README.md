@@ -25,8 +25,9 @@ The [energy-stratified scan tool](docs/STRATIFIED_TID.md) reallocates histories 
 The [full-spectrum importance sampler](docs/IMPORTANCE_SAMPLING.md) adds event likelihood weights and per-species energy-region audits; interior spacecraft statistics remain unresolved.
 The [statistics detail viewer](docs/IMPORTANCE_REVIEW.md) exposes source-region contributions and low/zero-hit screening for live and archived weighted results, with matching Model API and CLI summaries.
 The [desktop proposal editor](docs/SOURCE_SAMPLING_EDITOR.md) configures importance sampling without editing JSON. The [narrow-band energy-response study](docs/ENERGY_RESPONSE_STUDY.md) diagnoses primary entry and deposition by source energy with an external PSTAR range context.
+The [full-task-spectrum partition study](docs/PARTITION_STUDY.md) compares exact spectrum partitions and independent seeds, reconstructs accepted archives and provides an offline HTML review. Zero-event probability limits remain distinct from unresolved dose bounds.
 
-For this workstation, launch `dist/SpaceRad-0.1.3-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them. The same directory contains `spacerad_cli.exe` and a [CLI guide](docs/CLI.md).
+For this workstation, launch `dist/SpaceRad-source-config-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them. The same directory contains `spacerad_cli.exe` and a [CLI guide](docs/CLI.md).
 
 ## First workflow scope
 

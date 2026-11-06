@@ -5,11 +5,13 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 import csv
 import hashlib
+import io
 import json
 import math
 from pathlib import Path
 import subprocess
 import sys
+from run_energy_response import cli_environment
 
 
 MEV_J = 1.602176634e-13
@@ -122,7 +124,7 @@ def make_plan(project, settings, config, source_sha):
             "total_histories": sum(j["histories_per_thickness"] for j in jobs)*len(thicknesses), "jobs": jobs}
 
 
-def cli_scan(cli, root, job, runtime, timeout):
+def cli_scan(cli, root, job, runtime, timeout, env=None):
     name = job["id"]
     path = root / f"{name}.json"
     path.write_bytes(encode(job["project"]))
@@ -131,34 +133,39 @@ def cli_scan(cli, root, job, runtime, timeout):
     if runtime:
         command += ["--runtime", str(runtime)]
     with (root / f"{name}.stdout.log").open("wb") as stdout, (root / f"{name}.stderr.log").open("wb") as stderr:
-        proc = subprocess.run(command, stdout=stdout, stderr=stderr, timeout=timeout+60)
+        proc = subprocess.run(command, stdout=stdout, stderr=stderr, timeout=timeout+60, env=env)
     require(proc.returncode == 0, f"{name}: scan failed; inspect logs")
     print(f"Completed {name}", flush=True)
 
 
-def inspect_scan(cli, directory):
+def inspect_scan(cli, directory, env=None):
     proc = subprocess.run([str(cli), "inspect-scan", "--job", str(directory)],
-                          capture_output=True, text=True, encoding="utf-8", timeout=90)
+                          capture_output=True, text=True, encoding="utf-8", timeout=90, env=env)
     events = [json.loads(line) for line in proc.stdout.splitlines() if line.strip()]
     require(proc.returncode == 0 and events and events[-1]["type"] == "archived-scan" and
             events[-1]["report"]["status"] == "completed", f"Invalid or incomplete scan: {directory}")
     return events[-1]["report"]
 
 
-def write_csv(path, rows):
+def summary_csv(rows):
     fields = ("thickness_mm", "target_id", "tid_Gy", "observed_standard_error_Gy",
               "tid_standard_error_Gy", "relative_standard_error", "zero_hit_strata")
-    with path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fields, extrasaction="ignore")
-        writer.writeheader()
-        for row in rows:
-            target = row["target_id"]
-            if target and (target[0].isspace() or target[0] in "=+-@"):
-                target = "'" + target
-            writer.writerow({**row, "target_id": target, "zero_hit_strata": ";".join(row["zero_hit_strata"])})
+    f = io.StringIO(newline="")
+    writer = csv.DictWriter(f, fields, extrasaction="ignore")
+    writer.writeheader()
+    for row in rows:
+        target = row["target_id"]
+        if target and (target[0].isspace() or target[0] in "=+-@"):
+            target = "'" + target
+        writer.writerow({**row, "target_id": target, "zero_hit_strata": ";".join(row["zero_hit_strata"])})
+    return f.getvalue().encode("utf-8")
 
 
-def inspect(cli, root, baseline=None):
+def write_csv(path, rows):
+    path.write_bytes(summary_csv(rows))
+
+
+def inspect(cli, root, baseline=None, env=None):
     parent_path = root / "parent-project.json"
     plan = make_plan(read(parent_path), read(root / "scan-settings.json"), read(root / "strata-settings.json"), sha_file(parent_path))
     require(encode(plan) == (root / "plan.json").read_bytes(), "Stored plan differs from source reconstruction")
@@ -171,7 +178,7 @@ def inspect(cli, root, baseline=None):
         name = job["id"]
         require(sha_file(root / f"{name}.json") == job["input_sha256"], f"{name}: altered stratum input")
         directory = root / name
-        report = inspect_scan(cli, directory)
+        report = inspect_scan(cli, directory, env)
         archive = read(directory / "project.json")
         require(archive["provenance"]["last_loaded_input"]["sha256"] == job["input_sha256"] and
                 report["settings"] == settings and report["histories_per_case"] == job["histories_per_thickness"],
@@ -208,7 +215,7 @@ def inspect(cli, root, baseline=None):
 
     comparison = {}
     if baseline:
-        report = inspect_scan(cli, baseline)
+        report = inspect_scan(cli, baseline, env)
         parent = read(baseline / "project.json")
         counts = {p: sum(j["histories_per_thickness"] for j in plan["jobs"] if j["particle"] == p)
                   for p in plan["strata_settings"]["species"]}
@@ -255,14 +262,16 @@ def main():
         command.add_argument("--cli", required=True, type=Path)
         command.add_argument("--output-dir", required=True, type=Path)
         command.add_argument("--baseline", type=Path)
+        command.add_argument("--runtime", type=Path)
     for option in ("project", "scan-settings", "strata-settings"):
         run.add_argument(f"--{option}", required=True, type=Path)
-    run.add_argument("--runtime", type=Path)
     run.add_argument("--timeout-seconds", type=int, default=840)
     run.add_argument("--parallel", type=int, default=1)
     args = parser.parse_args()
     root, cli = args.output_dir.resolve(), args.cli.resolve()
     baseline = args.baseline.resolve() if args.baseline else None
+    runtime = args.runtime.resolve() if args.runtime else None
+    env = cli_environment(cli, runtime)
     if args.mode == "run":
         require(1 <= args.parallel <= 4 and 1 <= args.timeout_seconds <= 86400, "Invalid parallel or timeout limit")
         project_bytes = args.project.read_bytes()
@@ -273,15 +282,14 @@ def main():
         (root / "scan-settings.json").write_bytes(encode(settings))
         (root / "strata-settings.json").write_bytes(encode(config))
         (root / "plan.json").write_bytes(encode(plan))
-        runtime = args.runtime.resolve() if args.runtime else None
         with ThreadPoolExecutor(max_workers=args.parallel) as pool:
-            list(pool.map(lambda job: cli_scan(cli, root, job, runtime, args.timeout_seconds), plan["jobs"]))
-        result = inspect(cli, root, baseline)
+            list(pool.map(lambda job: cli_scan(cli, root, job, runtime, args.timeout_seconds, env), plan["jobs"]))
+        result = inspect(cli, root, baseline, env)
         (root / "summary.json").write_bytes(encode(result))
         write_csv(root / "summary.csv", result["rows"])
         print(f"Accepted {len(result['rows'])} target/thickness rows; {root / 'summary.json'}")
     else:
-        sys.stdout.buffer.write(encode(inspect(cli, root, baseline)))
+        sys.stdout.buffer.write(encode(inspect(cli, root, baseline, env)))
 
 
 if __name__ == "__main__":

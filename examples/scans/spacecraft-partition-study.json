@@ -1,0 +1,21 @@
+{
+  "schema": "spacerad.partition-study-settings/1",
+  "replicas": 2,
+  "screen": {"minimum_nonzero_histories": 20, "maximum_rse": 0.2, "family_confidence": 0.95},
+  "partitions": {
+    "coarse": {
+      "schema": "spacerad.energy-strata/1",
+      "species": {
+        "e-": {"split_MeV": [1], "histories": [250000, 250000]},
+        "proton": {"split_MeV": [20], "histories": [250000, 250000]}
+      }
+    },
+    "fine": {
+      "schema": "spacerad.energy-strata/1",
+      "species": {
+        "e-": {"split_MeV": [0.5, 1, 2], "histories": [125000, 125000, 125000, 125000]},
+        "proton": {"split_MeV": [8, 20, 50], "histories": [125000, 125000, 125000, 125000]}
+      }
+    }
+  }
+}

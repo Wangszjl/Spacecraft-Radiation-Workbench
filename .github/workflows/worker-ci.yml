@@ -24,6 +24,9 @@ on:
       - 'tools/compare_importance_scans.py'
       - 'tools/run_energy_response.py'
       - 'tools/check_energy_response_scaling.py'
+      - 'tools/stratified_tid.py'
+      - 'tools/stratified_study.py'
+      - 'tools/check_partition_study_runtime.py'
       - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
       - 'CMakeLists.txt'
@@ -51,6 +54,9 @@ on:
       - 'tools/compare_importance_scans.py'
       - 'tools/run_energy_response.py'
       - 'tools/check_energy_response_scaling.py'
+      - 'tools/stratified_tid.py'
+      - 'tools/stratified_study.py'
+      - 'tools/check_partition_study_runtime.py'
       - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
       - 'CMakeLists.txt'
@@ -157,6 +163,12 @@ jobs:
           python tools/run_energy_response.py run --cli build/worker-ci/spacerad_cli --project examples/projects/spacecraft-tid-assembly.json --settings examples/scans/spacecraft-bus-thickness.json --runtime build/worker-runtime/runtime.json --output-dir build/energy-response-acceptance --histories 2000 --parallel 2
           python tools/run_energy_response.py inspect --cli build/worker-ci/spacerad_cli --runtime build/worker-runtime/runtime.json --output-dir build/energy-response-acceptance
           python tools/check_energy_response_scaling.py --study-dir build/energy-response-acceptance --cli build/worker-ci/spacerad_cli --runtime build/worker-runtime/runtime.json --output-dir build/energy-scaling-acceptance
+      - name: Verify full-spectrum partition stability and archive rejection
+        run: >-
+          python tools/check_partition_study_runtime.py
+          --cli build/worker-ci/spacerad_cli
+          --runtime build/worker-runtime/runtime.json
+          --output-dir build/partition-study-acceptance
       - name: Preserve logs and numerical evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -190,5 +202,9 @@ jobs:
             build/energy-response-acceptance/*.csv
             build/energy-scaling-acceptance/**/*.json
             build/energy-scaling-acceptance/**/*.log
+            build/partition-study-acceptance/**/*.json
+            build/partition-study-acceptance/**/*.log
+            build/partition-study-acceptance/**/*.csv
+            build/partition-study-acceptance/**/*.html
           if-no-files-found: warn
           retention-days: 14
