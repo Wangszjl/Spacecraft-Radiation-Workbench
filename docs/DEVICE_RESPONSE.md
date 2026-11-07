@@ -2,13 +2,13 @@
 
 工作台的“DDD/SEE 响应筛查”接收用户提供的器件响应曲线，并把当前工程环境谱与响应表做确定性折合。它补充器件级数据处理和审计，不改变 Geant4 输运物理，也不把响应表折合称为完整 DDD、DPA 或 SEE 事件模拟。
 
-CSV 表头必须为：
+CSV 支持 UTF-8（含常见 Excel BOM）；表头必须为：
 
 ```text
 device_id,metric,particle,energy_MeV,response,response_unit,angular_basis,reference
 ```
 
-`metric=ddd` 时单位必须为 `MeV_cm2_per_g`；`metric=see` 时必须为 `cm2_per_device`。每个敏感器件、每种工程入射粒子各提供一条严格递增的能量曲线。响应曲线必须覆盖工程谱的完整能域，程序拒绝外推。`angular_basis` 必须填写 `isotropic_omnidirectional`，表示响应曲线对应当前工程的各向同性全向标量谱约定。`reference` 应填写数据集、论文、测试报告或标定工况标识。
+`metric=ddd` 时单位必须为 `MeV_cm2_per_g`；`metric=see` 时必须为 `cm2_per_device`。单个 CSV 只包含一个指标和响应单位；如同时评估 DDD 与 SEE，请分别提供两个 CSV。每个敏感器件、每种工程入射粒子各提供一条严格递增的能量曲线。响应曲线必须覆盖工程谱的完整能域，程序拒绝外推。`angular_basis` 必须填写 `isotropic_omnidirectional`，表示响应曲线对应当前工程的各向同性全向标量谱约定。`reference` 应填写数据集、论文、测试报告或标定工况标识。
 
 DDD 输出为 NIEL 响应折合后的 MeV/g 及对应 NIEL Gy；它不是 DPA 或 1-MeV 中子等效注量。SEE 输出为期望事件数／器件，以及在独立到达、固定横截面和 Poisson 假设下至少一次事件的概率。
 

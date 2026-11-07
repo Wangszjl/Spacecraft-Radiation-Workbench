@@ -200,21 +200,29 @@ jobs:
         run: |
           $taskResponseDirectory = Join-Path $PWD 'build/device-response-acceptance'
           New-Item -ItemType Directory -Path $taskResponseDirectory | Out-Null
-          $taskRows = [System.Collections.Generic.List[string]]::new()
-          $taskRows.Add('device_id,metric,particle,energy_MeV,response,response_unit,angular_basis,reference')
+          $taskDddRows = [System.Collections.Generic.List[string]]::new()
+          $taskSeeRows = [System.Collections.Generic.List[string]]::new()
+          $taskHeader = 'device_id,metric,particle,energy_MeV,response,response_unit,angular_basis,reference'
+          $taskDddRows.Add($taskHeader)
+          $taskSeeRows.Add($taskHeader)
           $taskProject = Get-Content -Raw -Path 'examples/projects/spacecraft-tid-assembly.json' | ConvertFrom-Json
-          foreach ($taskTarget in $taskProject.volumes | Where-Object { $_.sensitive }) {
+          $taskDeviceIds = [System.Collections.Generic.List[string]]::new()
+          foreach ($taskVolume in $taskProject.volumes | Where-Object { $_.sensitive }) { $taskDeviceIds.Add($taskVolume.id) }
+          foreach ($taskInstance in $taskProject.instances) {
+            $taskTemplate = $taskProject.templates | Where-Object { $_.id -eq $taskInstance.template_id } | Select-Object -First 1
+            foreach ($taskVolume in $taskTemplate.volumes | Where-Object { $_.sensitive }) { $taskDeviceIds.Add("$($taskInstance.id)/$($taskVolume.id)") }
+          }
+          foreach ($taskTarget in $taskDeviceIds) {
             foreach ($taskSpecies in @(@{ name='e-'; low=0.1; high=3 },@{ name='proton'; low=1; high=100 })) {
-              $taskMetric = if ($taskSpecies.name -eq 'proton') { 'ddd' } else { 'see' }
-              $taskUnit = if ($taskMetric -eq 'ddd') { 'MeV_cm2_per_g' } else { 'cm2_per_device' }
-              $taskRef = if ($taskMetric -eq 'ddd') { 'synthetic DDD API contract fixture' } else { 'synthetic SEE cross-section API contract fixture' }
               foreach ($taskPoint in @(@{e=$taskSpecies.low;r=1.0},@{e=[Math]::Sqrt($taskSpecies.low*$taskSpecies.high);r=2.0},@{e=$taskSpecies.high;r=1.0})) {
-                $taskRows.Add("$($taskTarget.id),$taskMetric,$($taskSpecies.name),$($taskPoint.e),$($taskPoint.r),$taskUnit,isotropic_omnidirectional,$taskRef")
+                $taskDddRows.Add("$taskTarget,ddd,$($taskSpecies.name),$($taskPoint.e),$($taskPoint.r),MeV_cm2_per_g,isotropic_omnidirectional,synthetic NIEL API contract fixture")
+                $taskSeeRows.Add("$taskTarget,see,$($taskSpecies.name),$($taskPoint.e),$($taskPoint.r),cm2_per_device,isotropic_omnidirectional,synthetic cross-section API contract fixture")
               }
             }
           }
-          $taskRows | Set-Content -LiteralPath (Join-Path $taskResponseDirectory 'response.csv') -Encoding utf8
-          build/worker-ci/test_device_response.exe 2>&1 | Tee-Object -FilePath (Join-Path $taskResponseDirectory 'contract.log')
+          $taskDddRows | Set-Content -LiteralPath (Join-Path $taskResponseDirectory 'ddd.csv') -Encoding utf8
+          $taskSeeRows | Set-Content -LiteralPath (Join-Path $taskResponseDirectory 'see.csv') -Encoding utf8
+          & build/worker-ci/test_device_response 2>&1 | Tee-Object -FilePath (Join-Path $taskResponseDirectory 'contract.log')
           if ($LASTEXITCODE -ne 0) { throw 'Response fold contract failed' }
           build/worker-ci/spacerad_cli validate --project examples/projects/spacecraft-tid-assembly.json
       - name: Verify real external-ephemeris model and orbit SDK
@@ -227,7 +235,7 @@ jobs:
           cmake -E rename build/native-sdk-stage build/native-sdk-relocated
           cmake -S examples/partition-consumer -B build/native-sdk-consumer -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PWD/build/native-sdk-relocated;$CONDA_PREFIX"
           cmake --build build/native-sdk-consumer --parallel 2
-          build/native-sdk-consumer/space_rad_consumer build/native-partition-acceptance/job build/orbit-model-acceptance/model build/device-response-acceptance/response.csv
+          build/native-sdk-consumer/space_rad_consumer build/native-partition-acceptance/job build/orbit-model-acceptance/model build/device-response-acceptance/ddd.csv build/device-response-acceptance/see.csv examples/projects/spacecraft-tid-assembly.json
           cmake -S examples/orbit-consumer -B build/orbit-sdk-consumer -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PWD/build/native-sdk-relocated;$CONDA_PREFIX"
           cmake --build build/orbit-sdk-consumer --parallel 2
           build/orbit-sdk-consumer/orbit_consumer build/orbit-model-acceptance/model

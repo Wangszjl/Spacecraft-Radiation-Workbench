@@ -2,13 +2,16 @@
 #include <spacerad/OrbitEnvironment.h>
 #include <spacerad/DeviceResponse.h>
 #include <QCoreApplication>
+#include <QFile>
 #include <iostream>
-int main(int argc,char** argv){QCoreApplication app(argc,argv);if(argc!=4)return 2;try{
-    auto p=spacerad::Project::demo();auto config=spacerad::defaultPartitionStudySettings(p,50);
-    auto plan=spacerad::planPartitionStudy(p,{"Spacecraft_Al",{0,1}},config);
+int main(int argc,char** argv){QCoreApplication app(argc,argv);if(argc!=6)return 2;try{
     auto report=spacerad::loadPartitionStudy(app.arguments()[1]);spacerad::PartitionStudyService service;
-    if(plan.at("jobs").empty()||spacerad::partitionStudyCsv(report).isEmpty()||service.running())return 3;
+    if(spacerad::partitionStudyCsv(report).isEmpty()||service.running())return 3;
     auto model=spacerad::loadOrbitModelJob(app.arguments()[2]);spacerad::OrbitEnvironmentService orbit;
-    auto response=spacerad::loadDeviceResponseCsv(app.arguments()[3]);response.validate();if(orbit.running()||response.curves.empty())return 4;
-    std::cout<<"installed-SpaceRad: partition="<<report.at("status")<<"/"<<report.at("rows").size()<<"; orbit="<<model.at("samples")<<"; response="<<response.metric<<'/'<<response.curves.size()<<'\n';return 0;
+    auto ddd=spacerad::loadDeviceResponseCsv(app.arguments()[3]);auto see=spacerad::loadDeviceResponseCsv(app.arguments()[4]);
+    QFile projectFile(app.arguments()[5]);if(!projectFile.open(QIODevice::ReadOnly))return 5;
+    auto responseProject=spacerad::Project::fromJson(spacerad::Json::parse(projectFile.readAll().toStdString()));
+    auto dddResult=spacerad::foldDeviceResponseTable(responseProject,ddd);auto seeResult=spacerad::foldDeviceResponseTable(responseProject,see);
+    if(orbit.running()||dddResult.at("rows").empty()||seeResult.at("rows").empty())return 4;
+    std::cout<<"installed-SpaceRad: partition="<<report.at("status")<<"/"<<report.at("rows").size()<<"; orbit="<<model.at("samples")<<"; DDD/SEE="<<dddResult.at("rows").size()<<'/'<<seeResult.at("rows").size()<<'\n';return 0;
 }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}
