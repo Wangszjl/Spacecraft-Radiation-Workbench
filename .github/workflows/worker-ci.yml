@@ -28,6 +28,11 @@ on:
       - 'tools/stratified_study.py'
       - 'tools/check_partition_study_runtime.py'
       - 'tools/check_native_partition.py'
+      - 'tools/generate_ae8ap8_example.py'
+      - 'tools/ae8ap8_ephemeris.py'
+      - 'tools/check_ae8ap8_example.py'
+      - 'examples/orbit-consumer/**'
+      - 'examples/ephemerides/**'
       - 'examples/partition-consumer/**'
       - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
@@ -60,6 +65,11 @@ on:
       - 'tools/stratified_study.py'
       - 'tools/check_partition_study_runtime.py'
       - 'tools/check_native_partition.py'
+      - 'tools/generate_ae8ap8_example.py'
+      - 'tools/ae8ap8_ephemeris.py'
+      - 'tools/check_ae8ap8_example.py'
+      - 'examples/orbit-consumer/**'
+      - 'examples/ephemerides/**'
       - 'examples/partition-consumer/**'
       - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
@@ -184,6 +194,15 @@ jobs:
           cmake -S examples/partition-consumer -B build/native-sdk-consumer -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PWD/build/native-sdk-relocated;$CONDA_PREFIX"
           cmake --build build/native-sdk-consumer --parallel 2
           build/native-sdk-consumer/partition_consumer build/native-partition-acceptance/job
+      - name: Verify real external-ephemeris model and orbit SDK
+        run: |
+          python -m pip --isolated install --only-binary=:all: spacepy==0.7.0
+          python -m pip freeze > build/worker-evidence/orbit-model-packages.txt
+          build/worker-ci/test_orbit_runtime "$CONDA_PREFIX/bin/python" "$PWD/tools" "$PWD/examples/ephemerides/synthetic-stationary-geo-km.csv" build/worker-runtime/runtime.json build/orbit-model-acceptance
+          python tools/check_ae8ap8_example.py --environment-dir build/orbit-model-acceptance/model/environment > build/orbit-model-acceptance/python-check.json
+          cmake -S examples/orbit-consumer -B build/orbit-sdk-consumer -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PWD/build/native-sdk-relocated;$CONDA_PREFIX"
+          cmake --build build/orbit-sdk-consumer --parallel 2
+          build/orbit-sdk-consumer/orbit_consumer build/orbit-model-acceptance/model
       - name: Preserve logs and numerical evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -224,5 +243,8 @@ jobs:
             build/native-partition-acceptance/**/*.json
             build/native-partition-acceptance/**/*.csv
             build/native-partition-acceptance/**/*.log
+            build/orbit-model-acceptance/**/*.json
+            build/orbit-model-acceptance/**/*.csv
+            build/orbit-model-acceptance/**/*.log
           if-no-files-found: warn
           retention-days: 14

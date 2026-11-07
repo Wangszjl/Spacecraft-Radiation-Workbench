@@ -59,8 +59,8 @@ def read_base_project(path):
     if not data or len(data) > MAX_PROJECT_BYTES:
         raise ValueError("Base project must be nonempty and at most 8 MiB")
     document = json.loads(data, object_pairs_hook=unique, parse_constant=reject_constant)
-    if not isinstance(document, dict) or document.get("schema") not in [f"scdat.radiation/{v}" for v in range(2, 8)]:
-        raise ValueError("Base project must be SpaceRad schema v2..v7")
+    if not isinstance(document, dict) or document.get("schema") not in [f"scdat.radiation/{v}" for v in range(2, 9)]:
+        raise ValueError("Base project must be SpaceRad schema v2..v8")
     if not isinstance(document.get("name"), str) or not document["name"]:
         raise ValueError("Base project must have a nonempty name")
     return data, document
@@ -211,6 +211,7 @@ def main():
     if external and not np.allclose(coords.ticks.TAI - coords.ticks.TAI[0], offsets, atol=1e-6, rtol=0):
         parser.error("An external interval crossing a UTC leap second is not supported")
     runs = []
+    print("SPACERAD_MODEL_PHASE 1 3", flush=True)
     for (label, model, kind, particle, low, high), band in zip(SPECIES, bands):
         if band:
             low, high = band
@@ -227,6 +228,7 @@ def main():
             if not math.isclose(flux[i, j], scalar, rel_tol=1e-12):
                 raise RuntimeError(f"{label}: batch layout does not match the scalar API at ({i}, {j})")
         runs.append((label, particle, grid, flux, differential, total))
+        print(f"SPACERAD_MODEL_PHASE {len(runs)+1} 3", flush=True)
 
     backend = file_identity(Path(ib.irbemlib._name))
     output.mkdir(parents=True)

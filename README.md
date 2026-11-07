@@ -27,8 +27,9 @@ The [statistics detail viewer](docs/IMPORTANCE_REVIEW.md) exposes source-region 
 The [desktop proposal editor](docs/SOURCE_SAMPLING_EDITOR.md) configures importance sampling without editing JSON. The [narrow-band energy-response study](docs/ENERGY_RESPONSE_STUDY.md) diagnoses primary entry and deposition by source energy with an external PSTAR range context.
 The [full-task-spectrum partition study](docs/PARTITION_STUDY.md) compares exact spectrum partitions and independent seeds, reconstructs accepted archives and provides an offline HTML review. Zero-event probability limits remain distinct from unresolved dose bounds.
 The [native partition window and service](docs/NATIVE_PARTITION_STUDY.md) configure and run these studies directly in the desktop/embedded workbench, with progress, cancellation, archived review and exports; Python is optional for independent verification.
+The [AP8/AE8 ephemeris window](docs/ORBIT_DESKTOP.md) runs the external model process, reconstructs the raw time-integrated spectra in C++, and applies the accepted environment explicitly before Geant4 transport. SpacePy is configured separately; saved model jobs can be reviewed without Python.
 
-For this workstation, launch `dist/SpaceRad-partition-desktop-local/spacerad.exe`. Its `runtime.json` already points at the locally available matching Geant4 data. The data files are external to the bundle; moving to a different machine requires configuring or installing them. The same directory contains `spacerad_cli.exe` and a [CLI guide](docs/CLI.md).
+For this workstation, launch `dist/SpaceRad-orbit-desktop-local/spacerad.exe`. Its `runtime.json` points at the local matching Geant4 data; `orbit-model-runtime.json` selects the separate SpacePy interpreter. These dependencies remain external to the bundle and require configuration on another machine. The same directory contains `spacerad_cli.exe` and a [CLI guide](docs/CLI.md).
 
 ## First workflow scope
 

@@ -32,7 +32,8 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [ ] Establish adequate statistics for the shielded interior and repeat with representative imported CAD geometry.
 - [x] Run AE8MIN/AP8MIN on an idealized orbit, generate a traceable project and verify a two-target Geant4 shielding scan. [Reference workflow](AE8_AP8_EXAMPLE.md).
 - [x] Import timestamped GEO/GEI ephemerides, reproduce a published SpacePy point and cross-check four RADBELT points. Transport a spectrum from a public Van Allen Probe A trajectory segment through demo scan and voxel projects. [External ephemeris evidence](AE8_AP8_EPHEMERIS.md).
-- [ ] Qualified mission environment cases and integrated desktop model execution. The UI opens generated projects; the model runs externally.
+- [x] Integrated external-ephemeris desktop AE8MIN/AP8MIN execution, C++ raw-spectrum reconstruction, explicit guarded application and offline model-job review. Model dependencies run in a separately configured process. [Workflow](ORBIT_DESKTOP.md).
+- [ ] Qualified full-mission environments, broader model choices and independent measured-environment comparisons.
 - [ ] Calibrated device DDD/SEE workflows and response data.
 - [x] First external-reference TID regression: thin silicon sphere, 10/20 MeV protons, analytic entry and fluence checks, 38 Windows checks. [PSTAR benchmark](PSTAR_BENCHMARK.md).
 - [ ] Independent physical validation and geometry/dose sensitivity studies.

@@ -1,10 +1,13 @@
 """Ephemeris validation and nonuniform time weighting (stdlib only)."""
 import math
+import json
+import tempfile
 from pathlib import Path
 import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+from generate_ae8ap8_example import read_base_project
 from ae8ap8_ephemeris import parse_ephemeris, trapezoid_weights
 
 
@@ -24,6 +27,20 @@ class Ephemeris(unittest.TestCase):
         weights = trapezoid_weights(offsets)
         self.assertEqual(weights, [5, 20, 15])
         self.assertEqual(math.fsum(a*b for a, b in zip(weights, [2, 3, 7])) / offsets[-1], 4.375)
+
+    def test_v8_base_sampling_is_preserved_without_mutation(self):
+        document = {"schema":"scdat.radiation/8", "name":"weighted fixture", "source_sampling":{
+            "schema":"spacerad.source-importance/1", "physical_fraction":0.9, "tail_fraction":0.05}}
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp)/"base.json"
+            raw = json.dumps(document).encode()
+            path.write_bytes(raw)
+            data, base = read_base_project(path)
+            self.assertEqual(data, raw)
+            self.assertEqual(base, document)
+            self.assertEqual(path.read_bytes(), raw)
+            path.write_text('{"schema":"scdat.radiation/8","name":"a","name":"b"}')
+            with self.assertRaises(ValueError):read_base_project(path)
 
     def test_rejects_gaps_and_invalid_input(self):
         variants = [

@@ -128,6 +128,8 @@ Manual values use the project's current quantity and existing isotropic omnidire
 
 ## Validation status
 
+`WorkbenchWidget::showOrbitEnvironment()` opens the shared external-ephemeris model workflow. `SpaceRad::Services` exports `OrbitEnvironmentService` and offline raw-spectrum reconstruction in `spacerad/OrbitEnvironment.h`; model generation uses a separately configured SpacePy process, while saved-job review requires neither Python nor Worker. See [orbit integration](ORBIT_DESKTOP.md). Apply operations are guarded against host edits and active transport.
+
 The shared widget also exposes `showPartitionStudy(archiveDirectory={})` for an independent native full-spectrum study window. `SpaceRad::Services` exports `spacerad/PartitionStudy.h` for planning, asynchronous execution/cancellation and offline aggregation without Widgets or a Python runtime. See [native study integration and relocated consumer](NATIVE_PARTITION_STUDY.md). The standalone and embedding-example shells are revalidated for this addition; the actual TKMaster application has not been rebuilt in this batch. Recompile hosts against the updated SDK to obtain the new widget/API.
 
 Version 0.1.4 also exposes `spacerad/Results.h` through `SpaceRad::Services`: load a completed saved job with `loadArchivedRun`, inspect its summary, compare two runs with `compareRuns`, and generate CSV with `comparisonCsv`. These functions require no Worker or Geant4 data. GUI hosts can call `WorkbenchWidget::showResults(A, B)` to open a separate nonmodal viewer without replacing the live project or emitting `resultReady`. See [saved-result semantics](RESULTS.md).

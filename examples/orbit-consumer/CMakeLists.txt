@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.22)
+project(SpaceRadOrbitConsumer LANGUAGES CXX)
+find_package(SpaceRad CONFIG REQUIRED COMPONENTS Services)
+add_executable(orbit_consumer main.cpp)
+target_link_libraries(orbit_consumer PRIVATE SpaceRad::Services)
