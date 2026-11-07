@@ -27,6 +27,8 @@ on:
       - 'tools/stratified_tid.py'
       - 'tools/stratified_study.py'
       - 'tools/check_partition_study_runtime.py'
+      - 'tools/check_native_partition.py'
+      - 'examples/partition-consumer/**'
       - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
       - 'CMakeLists.txt'
@@ -57,6 +59,8 @@ on:
       - 'tools/stratified_tid.py'
       - 'tools/stratified_study.py'
       - 'tools/check_partition_study_runtime.py'
+      - 'tools/check_native_partition.py'
+      - 'examples/partition-consumer/**'
       - 'examples/projects/voxel-scoring.json'
       - 'examples/scans/**'
       - 'CMakeLists.txt'
@@ -169,6 +173,17 @@ jobs:
           --cli build/worker-ci/spacerad_cli
           --runtime build/worker-runtime/runtime.json
           --output-dir build/partition-study-acceptance
+      - name: Verify native partition service and independent statistics
+        run: |
+          build/worker-ci/test_partition_runtime build/worker-runtime/runtime.json build/native-partition-acceptance
+          python tools/check_native_partition.py --study-dir build/native-partition-acceptance/job --output build/native-partition-acceptance/python-parity.json
+      - name: Verify relocated native partition SDK consumer
+        run: |
+          cmake --install build/worker-ci --prefix "$PWD/build/native-sdk-stage"
+          cmake -E rename build/native-sdk-stage build/native-sdk-relocated
+          cmake -S examples/partition-consumer -B build/native-sdk-consumer -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PWD/build/native-sdk-relocated;$CONDA_PREFIX"
+          cmake --build build/native-sdk-consumer --parallel 2
+          build/native-sdk-consumer/partition_consumer build/native-partition-acceptance/job
       - name: Preserve logs and numerical evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -206,5 +221,8 @@ jobs:
             build/partition-study-acceptance/**/*.log
             build/partition-study-acceptance/**/*.csv
             build/partition-study-acceptance/**/*.html
+            build/native-partition-acceptance/**/*.json
+            build/native-partition-acceptance/**/*.csv
+            build/native-partition-acceptance/**/*.log
           if-no-files-found: warn
           retention-days: 14

@@ -1,0 +1,31 @@
+#include <spacerad/PartitionStudy.h>
+#include <QCoreApplication>
+#include <cmath>
+#include <functional>
+#include <iostream>
+#include <set>
+#include <stdexcept>
+using namespace spacerad;
+namespace {
+int checks=0;
+void check(bool ok,const char* name){++checks;if(!ok)throw std::runtime_error(name);std::cout<<"PASS "<<name<<'\n';}
+bool rejects(const std::function<void()>& f){try{f();return false;}catch(...){return true;}}
+Project fixture(){auto p=Project::demo();p.radius=30;p.volumes={{"Shell","G4_Al",{0,0,0},{30,30,30},.5,false},{"Si","G4_Si",{0,0,0},{20,20,20},0,true}};p.spectra.clear();for(const auto& particle:{"e-","proton"}){engine::Spectrum s;s.particle=particle;s.energy={1,2,4};s.values={2,3,1};s.prepare();p.spectra.push_back(s);}p.validate();return p;}
+}
+int main(int argc,char** argv){QCoreApplication app(argc,argv);try{
+    auto p=fixture();auto invalid=p;invalid.spectra.clear();check(rejects([&]{defaultPartitionStudySettings(invalid);}),"Default configuration rejects invalid source safely");auto original=p.toJson();ShieldingScanSettings scan{"Shell",{.5,1}};auto config=defaultPartitionStudySettings(p,10000);auto plan=planPartitionStudy(p,scan,config);
+    check(p.toJson()==original,"Planning preserves full source/geometry/exposure");check(plan.at("jobs").size()==24&&plan.at("total_histories")==640000,"Native two-species study has exact total budget");
+    std::set<long> seeds;std::map<std::string,double> exposure;for(const auto& j:plan.at("jobs")){auto child=Project::fromJson(j.at("project"));auto planned=planShieldingScan(child,scan);for(const auto& c:planned.at("cases"))check(seeds.insert(c.at("project").at("seed").get<long>()).second,"Native child seed is unique");exposure[j.at("study").get<std::string>()]+=child.expectedPrimaries();check(child.environmentMetadata==p.environmentMetadata&&child.duration==p.duration&&child.quantity==p.quantity,"Stratum preserves physical environment context");}
+    for(const auto& e:exposure)check(std::abs(e.second/p.expectedPrimaries()-1)<1e-12,"Full spectrum exposure conserved across off-grid cuts");
+    auto fluence=p.convertedQuantity(engine::SpectrumQuantity::Fluence);auto fp=planPartitionStudy(fluence,scan,config);for(size_t i=0;i<plan.at("jobs").size();++i)check(std::abs(fp.at("jobs")[i].at("expected_primaries").get<double>()/plan.at("jobs")[i].at("expected_primaries").get<double>()-1)<1e-12,"Flux/fluence partition exposure matches");
+    auto bins=p;for(auto& s:bins.spectra){s.interpolation="bin_constant";s.values={4,2};s.prepare();}auto bp=planPartitionStudy(bins,scan,config);double sum=0;for(const auto& j:bp.at("jobs"))if(j.at("study")=="fine-1")sum+=j.at("expected_primaries").get<double>();check(std::abs(sum/bins.expectedPrimaries()-1)<1e-12,"Bin-constant off-grid partition conserves exposure");
+    auto bad=config;bad["partitions"]["fine"]["species"]["e-"]["histories"][0]=1;check(rejects([&]{planPartitionStudy(p,scan,bad);}),"Reject illegal band history budget");bad=config;bad["partitions"]["fine"]["species"]["e-"]["histories"][0]=10001;check(rejects([&]{planPartitionStudy(p,scan,bad);}),"Reject unmatched coarse/fine budget");bad=config;bad["partitions"]["fine"]["species"]["e-"]["split_MeV"]={1.5,2.4,3};check(rejects([&]{planPartitionStudy(p,scan,bad);}),"Reject non-nested partition");bad=config;bad["partitions"]["coarse"]["species"]["e-"]["split_MeV"]={4};check(rejects([&]{planPartitionStudy(p,scan,bad);}),"Reject endpoint energy cut");check(rejects([&]{planPartitionStudy(p,{"Shell",{.5,100}},config);}),"All thickness geometry validated before start");auto weighted=p;weighted.sourceSampling={{"schema","spacerad.source-importance/1"},{"physical_fraction",.5},{"tail_fraction",.1}};check(rejects([&]{planPartitionStudy(weighted,scan,config);}),"Reject weighted source for exact unweighted strata");
+    std::vector<Json> reports;for(const auto& job:plan.at("jobs")){double d=job.at("expected_primaries").get<double>()/p.expectedPrimaries();Json rows=Json::array();for(double t:scan.thicknesses)rows.push_back({{"thickness_mm",t},{"target_id","Si"},{"mass_kg",.001},{"components",Json::array({{{"particle",job.at("particle")},{"histories",job.at("project").at("events")},{"nonzero_histories",1000},{"tid_Gy",d},{"tid_standard_error_Gy",d*.1}}})}});reports.push_back({{"status","completed"},{"settings",scan.toJson()},{"histories_per_case",job.at("project").at("events")},{"curves",rows}});}
+    auto rows=reviewPartitionStudy(plan,reports);check(rows.size()==2&&std::abs(rows[0].at("mean_estimate_Gy").get<double>()-1)<1e-12,"Exact full-spectrum estimates aggregate across independent seeds");check(rows[0].at("support_screen_passed")==true&&rows[0].at("comparisons").size()==6,"Supported comparisons and six seed/partition pairs");
+    auto overflow=reports;for(auto& scan:overflow)for(auto& row:scan["curves"]){row["components"][0]["tid_Gy"]=1e154;row["components"][0]["tid_standard_error_Gy"]=1e154;}check(rejects([&]{reviewPartitionStudy(plan,overflow);}),"Aggregate dose/variance overflow is rejected before serialization");
+    auto& c=reports[0]["curves"][0]["components"][0];c["nonzero_histories"]=0;c["tid_Gy"]=0;c["tid_standard_error_Gy"]=0;rows=reviewPartitionStudy(plan,reports);check(rows[0].at("mean_standard_error_Gy").is_null()&&rows[0].at("mean_relative_standard_error").is_null()&&rows[0].at("support_screen_passed")==false,"One zero band keeps full uncertainty unknown");const auto& z=rows[0].at("estimates")[0].at("components")[0];double bound=z.at("zero_event_probability_upper");check(z.at("dose_upper_bound_Gy").is_null()&&std::abs(std::log1p(-bound)*20000-std::log(.05/48))<1e-12,"Family zero-event probability bound is not a dose bound");
+    reports[0]=nullptr;check(reviewPartitionStudy(plan,reports).empty(),"Partial study never exposes complete aggregate rows");
+    Json report={{"rows",rows}};report["rows"][0]["target_id"]="=unsafe\"name";check(partitionStudyCsv(report).contains("'=unsafe\"\"name"),"CSV escapes formula and quoted target names");
+    PartitionStudyService service;check(service.state()=="ready"&&!service.running()&&service.result().isEmpty(),"New native study service is idle");
+    std::cout<<checks<<" native partition contract checks\n";return 0;
+}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

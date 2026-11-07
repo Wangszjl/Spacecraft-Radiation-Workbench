@@ -28,7 +28,7 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [x] Desktop importance proposal configuration with precision-preserving save/reopen and a public copy-based Model API; 46 CTests and 27 native configuration checks. [Editor](SOURCE_SAMPLING_EDITOR.md).
 - [x] Narrow-band spacecraft energy-response diagnosis: 22 actual Worker jobs, 2.2 million histories, 132 target/energy rows, exact offline reconstruction and 7 real normalization checks. [Response study and limits](ENERGY_RESPONSE_STUDY.md).
 - [x] Full-task-spectrum partition/seed study: 8 million histories, 48 actual tasks, archived JSON/CSV/HTML reconstruction, zero-event probability limits distinct from dose bounds; 47 CTests and 11 real acceptance checks. [Results and unresolved interior support](PARTITION_STUDY.md).
-- [ ] Native desktop planning and aggregate review for full-spectrum stratified studies.
+- [x] Native desktop planning, execution, cancellation and aggregate review for full-spectrum stratified studies; shared Qt Core service and relocated SDK consumer. [Workflow and acceptance](NATIVE_PARTITION_STUDY.md).
 - [ ] Establish adequate statistics for the shielded interior and repeat with representative imported CAD geometry.
 - [x] Run AE8MIN/AP8MIN on an idealized orbit, generate a traceable project and verify a two-target Geant4 shielding scan. [Reference workflow](AE8_AP8_EXAMPLE.md).
 - [x] Import timestamped GEO/GEI ephemerides, reproduce a published SpacePy point and cross-check four RADBELT points. Transport a spectrum from a public Van Allen Probe A trajectory segment through demo scan and voxel projects. [External ephemeris evidence](AE8_AP8_EPHEMERIS.md).

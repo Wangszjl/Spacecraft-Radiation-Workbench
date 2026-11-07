@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.22)
+project(SpaceRadPartitionConsumer LANGUAGES CXX)
+find_package(SpaceRad CONFIG REQUIRED COMPONENTS Services)
+add_executable(partition_consumer main.cpp)
+target_link_libraries(partition_consumer PRIVATE SpaceRad::Services)

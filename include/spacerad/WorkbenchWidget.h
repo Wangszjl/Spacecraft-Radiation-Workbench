@@ -22,6 +22,7 @@ public:
  // Opens an independent offline viewer; live project/service state is preserved.
  void showResults(const QString& baselineDirectory={},const QString& candidateDirectory={});
  void showShieldingScan(const QString& archiveDirectory={});
+ void showPartitionStudy(const QString& archiveDirectory={});
  // Open a slice/table view for the currently accepted voxel field.
  void showVoxelResult();
 signals:
