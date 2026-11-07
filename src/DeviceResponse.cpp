@@ -5,7 +5,6 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QSaveFile>
-#include <QTemporaryFile>
 #include <algorithm>
 #include <cmath>
 #include <map>
