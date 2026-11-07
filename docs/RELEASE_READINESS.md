@@ -34,7 +34,8 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [x] Import timestamped GEO/GEI ephemerides, reproduce a published SpacePy point and cross-check four RADBELT points. Transport a spectrum from a public Van Allen Probe A trajectory segment through demo scan and voxel projects. [External ephemeris evidence](AE8_AP8_EPHEMERIS.md).
 - [x] Integrated external-ephemeris desktop AE8MIN/AP8MIN execution, C++ raw-spectrum reconstruction, explicit guarded application and offline model-job review. Model dependencies run in a separately configured process. [Workflow](ORBIT_DESKTOP.md).
 - [ ] Qualified full-mission environments, broader model choices and independent measured-environment comparisons.
-- [ ] Calibrated device DDD/SEE workflows and response data.
+- [x] User-supplied device DDD/SEE response-table fold, provenance, no-extrapolation checks, result archive and SDK API. This is deterministic response screening, not calibrated Geant4 DDD/DPA or SEE event transport. [Scope](DEVICE_RESPONSE.md).
+- [ ] Geant4 displacement-damage/DPA and SEE event-level processes, calibrated response data and independent physical validation.
 - [x] First external-reference TID regression: thin silicon sphere, 10/20 MeV protons, analytic entry and fluence checks, 38 Windows checks. [PSTAR benchmark](PSTAR_BENCHMARK.md).
 - [ ] Independent physical validation and geometry/dose sensitivity studies.
 

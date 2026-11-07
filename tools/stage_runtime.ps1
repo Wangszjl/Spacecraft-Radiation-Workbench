@@ -13,11 +13,13 @@ $taskScanGuide=Join-Path $taskProjectRoot 'docs/SHIELDING_SCAN.md'
 if(Test-Path -LiteralPath $taskScanGuide){Copy-Item -LiteralPath $taskScanGuide -Destination (Join-Path $Destination 'SHIELDING_SCAN.md')}
 $taskVoxelGuide=Join-Path $taskProjectRoot 'docs/VOXEL_SCORING.md'
 if(Test-Path -LiteralPath $taskVoxelGuide){Copy-Item -LiteralPath $taskVoxelGuide -Destination (Join-Path $Destination 'VOXEL_SCORING.md')}
-foreach($taskImportanceName in @('IMPORTANCE_SAMPLING.md','IMPORTANCE_REVIEW.md','SOURCE_SAMPLING_EDITOR.md','ENERGY_RESPONSE_STUDY.md','PARTITION_STUDY.md','NATIVE_PARTITION_STUDY.md','ORBIT_DESKTOP.md')){
+foreach($taskImportanceName in @('IMPORTANCE_SAMPLING.md','IMPORTANCE_REVIEW.md','SOURCE_SAMPLING_EDITOR.md','ENERGY_RESPONSE_STUDY.md','PARTITION_STUDY.md','NATIVE_PARTITION_STUDY.md','DEVICE_RESPONSE.md','ORBIT_DESKTOP.md')){
  $taskImportanceGuide=Join-Path (Join-Path $taskProjectRoot 'docs') $taskImportanceName
  if(Test-Path -LiteralPath $taskImportanceGuide){Copy-Item -LiteralPath $taskImportanceGuide -Destination (Join-Path $Destination $taskImportanceName)}
 }
 
+$taskDeviceExample=Join-Path $taskProjectRoot 'examples/device-response'
+if(Test-Path -LiteralPath $taskDeviceExample){$taskExamples=Join-Path $Destination 'examples';New-Item -ItemType Directory -Force -Path $taskExamples | Out-Null;Copy-Item -LiteralPath $taskDeviceExample -Destination $taskExamples -Recurse}
 if($ModelPython){
  $taskPythonPath=[IO.Path]::GetFullPath($ModelPython)
  if(-not (Test-Path -LiteralPath $taskPythonPath -PathType Leaf)){throw 'Configured model Python does not exist'}
