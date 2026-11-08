@@ -14,6 +14,7 @@ public:
  void loadProject(const QString&);
  void saveProject(const QString&);
  void runTo(const QString& newDirectory);
+ void runTo(const QString& newDirectory,const Json& targetFluenceSettings);
  void cancel();
  QByteArray acceptedResult() const;
  AnalysisService* service() const;
@@ -23,6 +24,7 @@ public:
  void showResults(const QString& baselineDirectory={},const QString& candidateDirectory={});
  void showShieldingScan(const QString& archiveDirectory={});
  void showOrbitEnvironment();
+ void showTargetFluence(const QString& archiveDirectory={});
  void showDeviceResponseStudy(const QString& archiveDirectory={});
  void showPartitionStudy(const QString& archiveDirectory={});
  // Open a slice/table view for the currently accepted voxel field.

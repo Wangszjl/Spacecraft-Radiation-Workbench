@@ -22,7 +22,9 @@ spacerad_cli inspect-result --job new-job
 spacerad_cli fold-local-response --job new-job --response device-response.csv
 ```
 
-运行档案保存设置原始字节及 SHA-256。实时验收与离线复核按原始矩重算归一化、标准误和总量，核对几何体积及粒子／分箱布局。SDK 可通过 `AnalysisService::start(project, directory, settings)` 启动，通过 `loadArchivedRun` 读取，并用 `foldTargetFluenceResponse` 折合。现阶段从 CLI 或 SDK 启用，无新的桌面计分配置入口。
+桌面可直接点击“靶区注量输运”，选择敏感区、能箱边界和新任务目录。配置随输运档案保存，不修改项目文件。完成后点击“靶区注量与局部响应”，界面自动填入刚完成的档案路径；也可手动选择历史输运档案。表格显示能箱注量、标准误和非零历史数。选择响应 CSV 后点击“折合局部响应”，可导出包含档案身份、结果和范围的 JSON。
+
+运行档案保存设置原始字节及 SHA-256。实时验收与离线复核按原始矩重算归一化、标准误和总量，核对几何体积及粒子／分箱布局。SDK 可通过 `AnalysisService::start(project, directory, settings)` 启动，通过 `loadArchivedRun` 读取，并用 `foldTargetFluenceResponse` 折合；Qt 宿主可用 `WorkbenchWidget::showTargetFluence(archive)` 打开核验界面。
 
 局部折合复用[器件响应 CSV](DEVICE_RESPONSE.md)的单位及来源字段。所有曲线必须对应被计分的靶区，且覆盖每个有观测贡献的粒子和能箱；发现下溢、上溢或其他粒子的非零贡献就拒绝。无非零历史时结果未知。对于有观测值的分箱，采用箱内均匀密度给出中心估计，用曲线在箱内的最小／最大值给出观测贡献的响应范围。该范围不是置信区间，也不约束漏采贡献；局部响应总标准误尚未估计。
 

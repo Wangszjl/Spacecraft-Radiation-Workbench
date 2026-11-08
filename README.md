@@ -29,6 +29,7 @@ The [full-task-spectrum partition study](docs/PARTITION_STUDY.md) compares exact
 The [native partition window and service](docs/NATIVE_PARTITION_STUDY.md) configure and run these studies directly in the desktop/embedded workbench, with progress, cancellation, archived review and exports; Python is optional for independent verification.
 The [AP8/AE8 ephemeris window](docs/ORBIT_DESKTOP.md) runs the external model process, reconstructs the raw time-integrated spectra in C++, and applies the accepted environment explicitly before Geant4 transport. SpacePy is configured separately; saved model jobs can be reviewed without Python.
 The [DDD/SEE response screen](docs/DEVICE_RESPONSE.md) folds user-provided, source-hashed device response curves over the current physical spectrum with explicit units and limitations; it is a response-table screening tool, not an event-level Geant4 DDD/SEE simulation.
+The [target fluence workflow](docs/TARGET_FLUENCE.md) scores energy-binned track length in a sensitive volume and folds a verified shielded spectrum through user-provided response curves, from desktop, CLI or SDK.
 
 For this workstation, launch `dist/SpaceRad-orbit-desktop-local/spacerad.exe`. Its `runtime.json` points at the local matching Geant4 data; `orbit-model-runtime.json` selects the separate SpacePy interpreter. These dependencies remain external to the bundle and require configuration on another machine. The same directory contains `spacerad_cli.exe` and a [CLI guide](docs/CLI.md).
 
