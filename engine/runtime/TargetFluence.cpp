@@ -2,6 +2,7 @@
 #include "Geometry.h"
 #include <algorithm>
 #include <cmath>
+#include <set>
 #include <stdexcept>
 
 namespace spacerad::engine {
@@ -34,14 +35,115 @@ void checkRow(const Json& actual,const Json& expected){
         need(e.is_null()?v.is_null():v.is_number()&&near(v.get<double>(),e.get<double>()),"Fluence normalization or uncertainty differs from moments");
     }
 }
+void checkResponse(const Json& actual,const Json& expected){
+    need(actual.is_object()&&actual.size()==expected.size(),"Unexpected history response fields");
+    for(const auto& [key,value]:expected.items()){
+        const auto& got=actual.at(key);
+        need(value.is_number_float()?got.is_number()&&near(got,value):got==value,
+             "History response differs from reconstructed value or uncertainty");
+    }
+}
+std::vector<std::optional<double>> coefficients(const TargetFluenceSpec& s){
+    const auto& t=s.responseTable;
+    need(t.is_object()&&t.size()==6&&t.at("schema")=="spacerad.device-response-table/1","Invalid history response table schema");
+    const auto& metric=t.at("metric");
+    need((metric=="ddd"||metric=="see")&&t.at("response_unit")==
+         (metric=="ddd"?"MeV_cm2_per_g":"cm2_per_device")&&
+         t.at("angular_basis")=="isotropic_omnidirectional","Invalid history response metric, unit or angular basis");
+    const auto& source=t.at("source_file");
+    need(source.is_object()&&source.size()==3&&source.at("file_name").is_string()&&
+         !source.at("file_name").get_ref<const std::string&>().empty()&&source.at("size_bytes").is_number_integer()&&
+         source.at("size_bytes")>0&&source.at("size_bytes")<=8*1024*1024&&source.at("sha256").is_string(),"Invalid response file identity");
+    const auto& hash=source.at("sha256").get_ref<const std::string&>();
+    need(hash.size()==64&&std::all_of(hash.begin(),hash.end(),[](char c){return (c>='a'&&c<='f')||(c>='0'&&c<='9');}),"Invalid response file SHA-256");
+    const auto& curves=t.at("curves");const auto& species=fluenceSpecies();
+    need(curves.is_array()&&!curves.empty()&&curves.size()<=species.size(),"Invalid history response curve count");
+    const size_t stride=s.edges.size()+1;
+    std::vector<std::optional<double>> values(species.size()*stride+1);
+    std::set<std::string> used;
+    for(const auto& c:curves){
+        need(c.is_object()&&c.size()==5&&c.at("device_id")==s.target&&
+             c.at("reference").is_string()&&!c.at("reference").get_ref<const std::string&>().empty(),
+             "History response curves must refer to the scored target and include a reference");
+        auto name=c.at("particle").get<std::string>();
+        auto it=std::find(species.begin(),species.end(),name);
+        need(it!=species.end()&&used.insert(name).second,"Unsupported or duplicate history response species");
+        const auto& es=c.at("energy_MeV");const auto& rs=c.at("response");
+        need(es.is_array()&&rs.is_array()&&es.size()==rs.size()&&es.size()>=2&&es.size()<=4096,"Invalid history response points");
+        std::vector<double> e,r;
+        for(size_t i=0;i<es.size();++i){
+            need(es[i].is_number()&&rs[i].is_number(),"History response points must be numeric");
+            double x=es[i],y=rs[i];
+            need(std::isfinite(x)&&x>0&&(e.empty()||x>e.back())&&std::isfinite(y)&&y>=0,"Invalid history response point");
+            e.push_back(x);r.push_back(y);
+        }
+        const auto offset=size_t(it-species.begin())*stride;
+        auto responseAt=[&](double x){
+            auto high=std::upper_bound(e.begin(),e.end(),x);
+            if(high==e.end())return r.back();
+            const auto i=size_t(high-e.begin()-1);
+            const double f=(x-e[i])/(e[i+1]-e[i]);
+            return (1-f)*r[i]+f*r[i+1];
+        };
+        for(size_t i=1;i<s.edges.size();++i){
+            const double a=s.edges[i-1],b=s.edges[i];
+            if(a<e.front()||b>e.back())continue;
+            double x=a,y=responseAt(a),average=0;
+            auto add=[&](double end,double value){
+                average+=(end-x)/(b-a)*(y/2+value/2);x=end;y=value;
+            };
+            for(auto node=std::upper_bound(e.begin(),e.end(),a);node!=e.end()&&*node<b;++node)
+                add(*node,r[size_t(node-e.begin())]);
+            add(b,responseAt(b));
+            need(std::isfinite(average),"History response coefficient overflow");
+            values[offset+i]=average;
+        }
+    }
+    need(std::any_of(values.begin(),values.end(),[](const auto& v){return v.has_value();}),"No fluence bin is fully covered by the response table");
+    return values;
+}
+Json responseReport(const TargetFluenceSpec& s,const std::vector<Moments>& bins,const Moments& total,const Moments& response,double factor){
+    need(response.count==total.count&&response.nonzero<=total.nonzero,"Invalid history response support");
+    auto raw=moment(response);
+    decode(raw,total.count);
+    double mean=0,maxSe=0,uncovered=0;
+    int uncoveredBins=0;
+    for(size_t i=0;i<bins.size();++i){
+        const auto c=s.responseCoefficients.at(i);
+        if(c){mean+=bins[i].mean * (*c);maxSe+=bins[i].standardError() * (*c);}
+        else if(bins[i].nonzero){++uncoveredBins;uncovered+=bins[i].mean*factor;}
+    }
+    const double se=response.standardError();
+    need(near(response.mean,mean)&&std::isfinite(maxSe)&&se<=maxSe+1e-8*std::max(maxSe,response.mean),
+         "History response moments violate the verified bin means or uncertainty bound");
+    const double estimate=response.mean*factor,normalizedSe=se*factor;
+    need(std::isfinite(estimate)&&std::isfinite(normalizedSe)&&std::isfinite(uncovered),"History response normalization overflow");
+    const bool complete=uncoveredBins==0&&total.nonzero>0;
+    const auto& metric=s.responseTable.at("metric");
+    return {{"schema","spacerad.target-history-response/1"},{"metric",metric},{"target_id",s.target},
+            {"estimator","history_sum_of_bin_averaged_response_times_weighted_track_length"},
+            {"result_unit",metric=="ddd"?"MeV_per_g":"expected_events_per_device"},
+            {"response_source",s.responseTable.at("source_file")},{"covered_moments",raw},
+            {"uncovered_observed_bins",uncoveredBins},{"uncovered_observed_fluence_cm-2",uncovered},
+            {"status",uncoveredBins?"incomplete_observed_coverage":!total.nonzero?"no_observed_fluence":!response.nonzero?"no_observed_response":"estimated"},
+            {"observed_folded_value",complete?Json(estimate):Json(nullptr)},
+            {"standard_error",complete&&response.nonzero?Json(normalizedSe):Json(nullptr)},
+            {"scope","Empirical history-level MC uncertainty for the selected binned, angle-averaged response only; excludes unresolved rare events, binning, transport systematics and calibration"}};
+}
 }
 const std::array<std::string,6>& fluenceSpecies(){
     static const std::array<std::string,6> species={"e-","e+","proton","alpha","gamma","neutron"};
     return species;
 }
-Json TargetFluenceSpec::toJson() const{return {{"schema","spacerad.target-fluence-settings/1"},{"target_id",target},{"energy_edges_MeV",edges}};}
+Json TargetFluenceSpec::toJson() const{
+    Json out={{"schema","spacerad.target-fluence-settings/1"},{"target_id",target},{"energy_edges_MeV",edges}};
+    if(!responseTable.is_null()){out["schema"]="spacerad.target-fluence-settings/2";out["response_table"]=responseTable;}
+    return out;
+}
 TargetFluenceSpec TargetFluenceSpec::fromJson(const Json& j){
-    need(j.is_object()&&j.size()==3&&j.at("schema")=="spacerad.target-fluence-settings/1","Unsupported target fluence settings");
+    const bool response=j.is_object()&&j.value("schema",Json(nullptr))=="spacerad.target-fluence-settings/2";
+    need(j.is_object()&&((response&&j.size()==4&&j.at("response_table").is_object())||
+         (j.size()==3&&j.at("schema")=="spacerad.target-fluence-settings/1")),"Unsupported target fluence settings");
     TargetFluenceSpec s;
     s.target=j.at("target_id");
     need(!s.target.empty(),"Target ID required");
@@ -53,6 +155,7 @@ TargetFluenceSpec TargetFluenceSpec::fromJson(const Json& j){
         need(std::isfinite(x)&&x>=0&&x<=1e9&&(s.edges.empty()||x>s.edges.back()),"Fluence energy edges must increase within 0..1e9 MeV");
         s.edges.push_back(x);
     }
+    if(response){s.responseTable=j.at("response_table");s.responseCoefficients=coefficients(s);}
     return s;
 }
 double TargetFluenceSpec::volume(const Project& p) const{
@@ -65,7 +168,7 @@ double TargetFluenceSpec::volume(const Project& p) const{
     }
     throw std::runtime_error("Fluence target must be a sensitive component ID");
 }
-Json makeTargetFluence(const Project& p,const TargetFluenceSpec& s,const std::string& hash,const std::vector<Moments>& m,const Moments& total){
+Json makeTargetFluence(const Project& p,const TargetFluenceSpec& s,const std::string& hash,const std::vector<Moments>& m,const Moments& total,const Moments* response){
     const auto stride=s.edges.size()+1;
     const double volume=s.volume(p),factor=p.expectedPrimaries()*100/volume;
     need(std::isfinite(factor)&&factor>0&&m.size()==fluenceSpecies().size()*stride+1&&total.count==p.events,"Invalid target fluence normalization");
@@ -78,10 +181,12 @@ Json makeTargetFluence(const Project& p,const TargetFluenceSpec& s,const std::st
         by[fluenceSpecies()[k]]=std::move(bins);
     }
     need(m.back().count==p.events&&near(sum+m.back().mean,total.mean),"Fluence bins do not conserve total track length");
-    return {{"schema","spacerad.target-fluence/1"},{"settings",s.toJson()},{"settings_sha256",hash},
+    Json out={{"schema","spacerad.target-fluence/1"},{"settings",s.toJson()},{"settings_sha256",hash},
             {"volume_mm3",volume},{"estimator","volume_track_length_pre_step_kinetic_energy"},
             {"bins","underflow, [lower,upper), overflow; other species aggregated separately"},
             {"total",row(total,factor)},{"species",by},{"other_species",row(m.back(),factor)}};
+    if(response)out["history_response"]=responseReport(s,m,total,*response,factor);
+    return out;
 }
 void validateTargetFluence(const Project& p,const Json& result,const Json& settings,const std::string& hash){
     if(settings.is_null()){need(!result.contains("target_fluence"),"Unexpected target fluence without settings snapshot");return;}
@@ -94,10 +199,13 @@ void validateTargetFluence(const Project& p,const Json& result,const Json& setti
         for(const auto& b:bins)moments.push_back(decode(b.at("moments"),p.events));
     }
     moments.push_back(decode(field.at("other_species").at("moments"),p.events));
-    const auto expected=makeTargetFluence(p,s,hash,moments,decode(field.at("total").at("moments"),p.events));
+    std::optional<Moments> response;
+    if(!s.responseTable.is_null())response=decode(field.at("history_response").at("covered_moments"),p.events);
+    const auto expected=makeTargetFluence(p,s,hash,moments,decode(field.at("total").at("moments"),p.events),response?&*response:nullptr);
     need(field.size()==expected.size()&&field.at("volume_mm3").is_number()&&near(field.at("volume_mm3"),expected.at("volume_mm3")),"Fluence volume differs from project");
     for(const char* key:{"schema","settings","settings_sha256","estimator","bins"})need(field.at(key)==expected.at(key),"Fluence metadata differs from settings");
     for(const char* key:{"total","other_species"})checkRow(field.at(key),expected.at(key));
     for(const auto& name:fluenceSpecies())for(size_t i=0;i<by.at(name).size();++i)checkRow(by.at(name)[i],expected.at("species").at(name)[i]);
+    if(response)checkResponse(field.at("history_response"),expected.at("history_response"));
 }
 }

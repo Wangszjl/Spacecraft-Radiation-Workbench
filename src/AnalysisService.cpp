@@ -75,12 +75,13 @@ void AnalysisService::start(const Project& project,const QString& directory){sta
 void AnalysisService::start(const Project& project,const QString& directory,const Json& targetFluenceSettings){
  require(!running(),"Analysis already running");project.validate();Json fluence=nullptr;
  if(!targetFluenceSettings.is_null()){auto spec=engine::TargetFluenceSpec::fromJson(targetFluenceSettings);spec.volume(project);fluence=spec.toJson();}
+ require(fluence.is_null()||fluence.dump().size()<=65536,"Fluence settings snapshot exceeds 64 KiB");
  auto env=childEnvironment(d->options);auto context=read(QFileInfo(d->options.worker).dir().filePath("radiation-build.json"),1024*1024);auto manifest=read(QFileInfo(d->options.worker).dir().filePath("radiation-datasets.txt"),65536);
  require(!directory.trimmed().isEmpty()&&QFileInfo(directory).isAbsolute()&&!QFileInfo::exists(directory),"Choose a new absolute output directory");auto input=QByteArray::fromStdString(project.toJson().dump(2));require(input.size()<=8*1024*1024,"Project exceeds 8 MiB launch budget");auto workerHash=executableHash(d->options.worker);
  require(QDir().mkpath(directory),"Cannot create job directory");QSaveFile f(directory+"/project.json");require(f.open(QIODevice::WriteOnly)&&f.write(input)==input.size()&&f.commit(),"Cannot save project snapshot");
  d->fluence=fluence;d->fluenceBytes.clear();
  if(!fluence.is_null()){
-    d->fluenceBytes=QByteArray::fromStdString(fluence.dump(2));QSaveFile settings(directory+"/fluence-settings.json");
+    d->fluenceBytes=QByteArray::fromStdString(fluence.dump());QSaveFile settings(directory+"/fluence-settings.json");
     require(settings.open(QIODevice::WriteOnly)&&settings.write(d->fluenceBytes)==d->fluenceBytes.size()&&settings.commit(),"Cannot save fluence settings snapshot");
  }
  d->directory=QFileInfo(directory).absoluteFilePath();d->input=input;d->expectedProject=spacerad::engine::loadProjectFile(directory+"/project.json").project.toJson();d->workerHash=workerHash;d->contextHash=digest(context);d->manifestHash=digest(manifest);d->histories=project.events;d->accepted.clear();d->pending.clear();d->cancelled=false;

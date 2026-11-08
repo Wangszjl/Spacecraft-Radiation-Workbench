@@ -58,16 +58,22 @@ def main():
     spec = {"schema":"spacerad.target-fluence-settings/1","target_id":"Target","energy_edges_MeV":[9,10.5,12]}
     settings = write("settings.json",spec)
 
-    def run(label, p, score_settings=settings):
+    def run(label, p, score_settings=settings, history_response=None):
         directory = root / label
         source = write(f"{label}-input.json",p)
+        response_args = ["--history-response",history_response] if history_response else []
         terminal = invoke(label,"run","--project",source,"--runtime",runtime,"--output",directory,
-                          "--fluence-settings",score_settings,"--timeout-seconds","120",event="completed")
+                          "--fluence-settings",score_settings,"--timeout-seconds","120",*response_args,event="completed")
         field = invoke(label+"-inspect","inspect-result","--job",directory,event="archived-result")["summary"]["target_fluence"]
         check(field == terminal["target_fluence"], label+": live and offline fluence match")
         return directory, field
 
-    job, field = run("vacuum",project)
+    header = "device_id,metric,particle,energy_MeV,response,response_unit,angular_basis,reference\n"
+    linear = root/"linear.csv"
+    linear.write_text(header+"".join(
+        f"Target,ddd,proton,{e},{e},MeV_cm2_per_g,isotropic_omnidirectional,Synthetic linear fixture\n"
+        for e in (9,12)),encoding="utf-8")
+    job, field = run("vacuum",project,history_response=linear)
     total = field["total"]
     normalization = math.pi*(radius/10)**2*fluence*100/volume
     # Impact parameter squared is uniform over the projected source disk.
@@ -88,7 +94,6 @@ def main():
           math.isclose(sum(b["fluence_cm-2"] for b in proton),total["fluence_cm-2"],rel_tol=1e-12),
           "Bins conserve all observed vacuum track length")
 
-    header = "device_id,metric,particle,energy_MeV,response,response_unit,angular_basis,reference\n"
     for metric, unit, response in (("ddd","MeV_cm2_per_g",2),("see","cm2_per_device",1e-6)):
         table = root / f"{metric}.csv"
         table.write_text(header+"".join(f"Target,{metric},proton,{e},{response},{unit},isotropic_omnidirectional,Synthetic constant fixture\n" for e in (9,12)),encoding="utf-8")
@@ -102,10 +107,6 @@ def main():
     invoke("missing-coverage","fold-local-response","--job",job,"--response",narrow,code=2)
     checks.append("Incomplete response bin coverage is rejected")
 
-    linear = root/"linear.csv"
-    linear.write_text(header+"".join(
-        f"Target,ddd,proton,{e},{e},MeV_cm2_per_g,isotropic_omnidirectional,Synthetic linear fixture\n"
-        for e in (9,12)),encoding="utf-8")
     folded = invoke("linear","fold-local-response","--job",job,"--response",linear,
                     event="local-response-folded")["report"]
     values = [b["fluence_cm-2"] for b in proton[1:-1]]
@@ -117,6 +118,18 @@ def main():
           all(math.isclose(x,y,rel_tol=1e-12) for x,y in zip(
               folded["observed_energy_bin_response_range"],(expected_min,expected_max))),
           "Linear response recovers independently calculated observed bin bounds")
+    history = field["history_response"]
+    coeff = [(a+b)/2 for a,b in zip(bounds,bounds[1:])]
+    first, second = [b["moments"] for b in proton[1:-1]]
+    # In vacuum each proton stays in one energy bin for its entire history:
+    # the empirical cross moment is zero, so the centered cross moment is -N*m1*m2.
+    diagonal = sum(c*c*m["m2_weighted_length_mm2"] for c,m in zip(coeff,(first,second)))
+    cross = -2*n*coeff[0]*coeff[1]*first["mean_weighted_length_mm"]*second["mean_weighted_length_mm"]
+    expected_se = math.sqrt((diagonal+cross)/(n*(n-1)))*normalization
+    check(cross<0 and history["status"]=="estimated" and
+          math.isclose(history["observed_folded_value"],expected,rel_tol=1e-10) and
+          math.isclose(history["standard_error"],expected_se,rel_tol=1e-10),
+          "History response includes the independently reconstructed negative cross-bin covariance")
 
     raw = (job/"fluence-settings.json").read_bytes()
     try:
@@ -135,6 +148,14 @@ def main():
         checks.append("Changed normalized uncertainty is rejected")
     finally:
         result_path.write_bytes(raw_result)
+    try:
+        altered=json.loads(raw_result)
+        altered["target_fluence"]["history_response"]["standard_error"]*=2
+        result_path.write_text(json.dumps(altered),encoding="utf-8")
+        invoke("changed-response-error","inspect-result","--job",job,code=2)
+        checks.append("Archived history response uncertainty is reconstructed and verified")
+    finally:
+        result_path.write_bytes(raw_result)
 
     shield = {**target,"id":"Shell","material":"G4_Al","shape":"box","size_mm":[30,30,30],
               "wall_mm":8,"sensitive":False}
@@ -144,32 +165,48 @@ def main():
 
     weighted = {**project,"schema":"scdat.radiation/8","source_sampling":{
         "schema":"spacerad.source-importance/1","physical_fraction":0.5,"tail_fraction":0.2}}
-    _, weighted_field = run("weighted-vacuum",weighted)
+    _, weighted_field = run("weighted-vacuum",weighted,history_response=root/"ddd.csv")
     weighted_total = weighted_field["total"]
     check(abs(weighted_total["fluence_cm-2"]-fluence)<=5*weighted_total["standard_error_cm-2"],
           "Importance weighting restores physical vacuum fluence")
+    weighted_history=weighted_field["history_response"]
+    check(math.isclose(weighted_history["observed_folded_value"],2*weighted_total["fluence_cm-2"],rel_tol=1e-10) and
+          math.isclose(weighted_history["standard_error"],2*weighted_total["standard_error_cm-2"],rel_tol=1e-10),
+          "Constant history response applies the importance weight once to both mean and uncertainty")
 
     wide = write("wide-settings.json",{**spec,"energy_edges_MeV":[1e-9,1,9,10.5,12,100]})
-    thin_job, thin = run("thin-shield",{**project,"name":"Synthetic transmitted response regression",
-        "volumes":[{**shield,"wall_mm":0.1},target]},wide)
-    thin_total = thin["total"]
-    check(thin_total["moments"]["nonzero_histories"]>50,"Thin shielding fixture yields observed transmission")
     table = root/"thin-shield-response.csv"
     table.write_text(header+"".join(
-        f"Target,ddd,{species},{energy},2,MeV_cm2_per_g,isotropic_omnidirectional,Synthetic constant fixture\n"
-        for species in thin["species"] for energy in (1e-9,100)),encoding="utf-8")
-    folded = invoke("thin-shield-ddd","fold-local-response","--job",thin_job,"--response",table,
+        f"Target,see,{species},{energy},2e-6,cm2_per_device,isotropic_omnidirectional,Synthetic constant fixture\n"
+        for species in field["species"] for energy in (1e-9,100)),encoding="utf-8")
+    thin_job, thin = run("thin-shield",{**project,"name":"Synthetic transmitted response regression",
+        "volumes":[{**shield,"wall_mm":0.1},target]},wide,table)
+    thin_total = thin["total"]
+    check(thin_total["moments"]["nonzero_histories"]>50,"Thin shielding fixture yields observed transmission")
+    folded = invoke("thin-shield-see","fold-local-response","--job",thin_job,"--response",table,
                     event="local-response-folded")["report"]
-    check(math.isclose(folded["observed_folded_value"],2*thin_total["fluence_cm-2"],rel_tol=1e-12),
+    check(math.isclose(folded["observed_folded_value"],2e-6*thin_total["fluence_cm-2"],rel_tol=1e-12),
           "Local response fold uses the actual post-shield target fluence")
+    check(math.isclose(thin["history_response"]["standard_error"],2e-6*thin_total["standard_error_cm-2"],rel_tol=1e-10),
+          "Shielded SEE response retains its full history-level variance")
+    partial=root/"partial.csv"
+    partial.write_text((root/"ddd.csv").read_text().replace("proton,12,","proton,10.5,"),encoding="utf-8")
+    _, incomplete=run("partial-response",{**project,"events":5000},history_response=partial)
+    report=incomplete["history_response"]
+    check(report["status"]=="incomplete_observed_coverage" and report["uncovered_observed_fluence_cm-2"]>0 and
+          report["observed_folded_value"] is None and report["standard_error"] is None,
+          "Incomplete observed response coverage suppresses the total estimate and standard error")
     write("summary.json",{"passed":True,"checks":checks,"histories_per_run":n,
                           "incident_cm-2":fluence,"analytic_se_cm-2":analytic_se,
                           "vacuum_cm-2":total["fluence_cm-2"],"vacuum_se_cm-2":total["standard_error_cm-2"],
                           "shielded_cm-2":attenuated["total"]["fluence_cm-2"],
                           "thin_shield_cm-2":thin_total["fluence_cm-2"],
                           "weighted_vacuum_cm-2":weighted_total["fluence_cm-2"],
+                          "vacuum_response_se":history["standard_error"],
+                          "independent_vacuum_response_se":expected_se,
+                          "thin_shield_see_se":thin["history_response"]["standard_error"],
                           "scope":"Synthetic normalization and attenuation regression; not an independent shield-dose or device calibration benchmark"})
-    print(f"Target fluence acceptance: {len(checks)} checks, four real Worker jobs")
+    print(f"Target fluence and history response acceptance: {len(checks)} checks, five real Worker jobs")
 
 
 if __name__ == "__main__":

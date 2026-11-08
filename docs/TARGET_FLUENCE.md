@@ -18,16 +18,27 @@
 
 ```powershell
 spacerad_cli run --project project.json --runtime runtime.json --fluence-settings fluence.json --output new-job
-spacerad_cli inspect-result --job new-job
+spacerad_cli run --project project.json --runtime runtime.json --fluence-settings fluence.json --history-response device-response.csv --output response-job
+spacerad_cli inspect-result --job response-job
 spacerad_cli fold-local-response --job new-job --response device-response.csv
 ```
 
-桌面可直接点击“靶区注量输运”，选择敏感区、能箱边界和新任务目录。配置随输运档案保存，不修改项目文件。完成后点击“靶区注量与局部响应”，界面自动填入刚完成的档案路径；也可手动选择历史输运档案。表格显示能箱注量、标准误和非零历史数。选择响应 CSV 后点击“折合局部响应”，可导出包含档案身份、结果和范围的 JSON。
+桌面可直接点击“靶区注量输运”，选择敏感区、能箱边界和新任务目录。“逐历史响应（可选）”可在启动前选定器件响应 CSV。设置随输运档案保存，项目文件继续保留原有配置。完成后点击“靶区注量与局部响应”，界面自动填入刚完成的档案路径；也可手动选择历史输运档案。表格显示能箱注量、标准误和非零历史数。若输运时指定了响应表，核验档案后可直接查看逐历史响应、蒙特卡罗标准误和覆盖状态，并导出带档案身份的 JSON。也可另选响应 CSV，点击“离线能箱折合”复用已有分箱注量。
 
 运行档案保存设置原始字节及 SHA-256。实时验收与离线复核按原始矩重算归一化、标准误和总量，核对几何体积及粒子／分箱布局。SDK 可通过 `AnalysisService::start(project, directory, settings)` 启动，通过 `loadArchivedRun` 读取，并用 `foldTargetFluenceResponse` 折合；Qt 宿主可用 `WorkbenchWidget::showTargetFluence(archive)` 打开核验界面。
 
-局部折合复用[器件响应 CSV](DEVICE_RESPONSE.md)的单位及来源字段。所有曲线必须对应被计分的靶区，且覆盖每个有观测贡献的粒子和能箱；发现下溢、上溢或其他粒子的非零贡献就拒绝。无非零历史时结果未知。对于有观测值的分箱，采用箱内均匀密度给出中心估计，用曲线在箱内的最小／最大值给出观测贡献的响应范围。该范围不是置信区间，也不约束漏采贡献；局部响应总标准误尚未估计。
+局部折合复用[器件响应 CSV](DEVICE_RESPONSE.md)的单位及来源字段。所有曲线必须对应被计分的靶区，且覆盖每个有观测贡献的粒子和能箱；发现下溢、上溢或其他粒子的非零贡献就拒绝。无非零历史时结果未知。对于有观测值的分箱，采用箱内均匀密度给出中心估计，用曲线在箱内的最小／最大值给出观测贡献的响应范围。该范围不是置信区间，也不约束漏采贡献；离线更换响应表后，分箱边际统计无法恢复箱间协方差，因此离线折合的总标准误保持未知。
+
+## 输运时固定响应表
+
+设第 `i` 个初级历史在分箱 `b` 的步长之和为 `L_{ib}`，其中已应用 Geant4 步前权重。令 `c_b` 为完全覆盖该分箱的响应曲线在箱内的平均值，`w_i` 为初级历史的抽样似然权重。Geant4 计算每个历史的 `Y_i = w_i Σ_b c_b L_{ib}`，再对包括零贡献在内的所有历史累计均值和 M2。工程预期初级数及靶区体积用于归一化响应均值与样本均值标准误。先合并同一历史中的粒子和能箱贡献，可以保留这些贡献的协方差。统计方法参见 [Walters 等的逐历史方差估计](https://pubmed.ncbi.nlm.nih.gov/12512706/)。
+
+SDK 可用 `spacerad.target-fluence-settings/2`，在原设置字段之外传入 `response_table`，其值为 `DeviceResponseTable::toJson()` 的规范化响应表，包含 CSV SHA-256、曲线和来源字段。设置快照最多 64 KiB，随结果归档。读取 `target_fluence.history_response` 可取得响应值、`standard_error`、响应表身份和覆盖状态。旧版 `/1` 设置继续用于仅计分注量的任务。
+
+若观测到响应表未完全覆盖的粒子或能箱，完整响应值和标准误均为空，并报告未覆盖的观测能箱数和注量。完全未观测到靶区注量时，两者也为空。若已观测到注量且所有覆盖贡献的响应都为零，报告观测响应值为零，标准误保持未知。
+
+`covered_moments` 保留响应系数加权后的历史矩，其中沿用了注量计分的长度字段名，实际单位还需乘以响应系数的单位。档案复核从各箱均值校验响应均值，根据已归档的逐历史矩重算标准误，并用各箱标准误的加权和核对上界。各箱边际矩本身无法独立重建完整历史的 M2。报告的标准误只量化此次输运抽样，器件标定、环境模型和能量分箱误差需分别评估。
 
 这是体积平均、步前能量分箱下的屏蔽后响应筛查。使用用户声明的角度平均响应；不推断方向依赖、箱内谱形、步长或能量网格收敛，也不替代 DDD/DPA 或 SEE 器件级物理标定。
 
-验收脚本 `tools/check_target_fluence.py` 使用真空球的解析弦长均值与方差验证注量和标准误，并覆盖重要性抽样、铝壳透射、合成常数响应、覆盖拒绝及档案篡改拒绝。铝壳工况检验软件链路，未作实测屏蔽基准。
+验收脚本 `tools/check_target_fluence.py` 使用真空球的解析弦长均值与方差验证注量和标准误，并覆盖重要性抽样、铝壳透射、合成 DDD 与 SEE 响应、覆盖拒绝及档案篡改拒绝。双能箱真空算例使用可独立计算的协方差验证逐历史响应标准误。铝壳工况检验软件链路，未作实测屏蔽基准。

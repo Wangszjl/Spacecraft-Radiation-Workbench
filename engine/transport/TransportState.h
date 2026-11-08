@@ -53,7 +53,7 @@ struct State {
     std::string fluenceHash;
     std::map<size_t,double> fluenceEvent;
     std::vector<Moments> fluenceMoments;
-    Moments fluenceTotal;
+    Moments fluenceTotal,historyResponse;
     int eventId = 0;
     double eventWeight = 1;
     bool tailEvent = false;

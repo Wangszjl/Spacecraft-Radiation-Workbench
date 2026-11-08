@@ -49,6 +49,10 @@ int main(int argc,char** argv){
         const auto before=host.project().toJson();
         bool invalidRejected=false;
         const auto job=out+"/job";
+        const auto response=out+"/response.csv";
+        write(response,"device_id,metric,particle,energy_MeV,response,response_unit,angular_basis,reference\n"
+                       "Target,ddd,proton,9,2,MeV_cm2_per_g,isotropic_omnidirectional,Synthetic fixture\n"
+                       "Target,ddd,proton,12,2,MeV_cm2_per_g,isotropic_omnidirectional,Synthetic fixture\n");
         QTimer::singleShot(0,&host,[&]{
             auto* setup=qobject_cast<QDialog*>(QApplication::activeModalWidget());
             if(!setup||setup->objectName()!="spaceradTargetFluenceSetup"){if(setup)setup->reject();return;}
@@ -59,6 +63,7 @@ int main(int argc,char** argv){
             invalidRejected=setup->isVisible()&&!child<QLabel>(*setup,"spaceradTargetFluenceSetupStatus")->text().isEmpty();
             edges->setText("9, 10.5, 12");
             child<QLineEdit>(*setup,"spaceradTargetFluenceOutput")->setText(job);
+            child<QLineEdit>(*setup,"spaceradHistoryResponseInput")->setText(response);
             buttons->click();
             if(setup->isVisible())setup->reject();
         });
@@ -78,16 +83,17 @@ int main(int argc,char** argv){
         auto* view=child<QDialog>(host,"spaceradTargetFluenceReview");
         check(child<QLineEdit>(*view,"spaceradTargetFluenceArchive")->text()==job,"Viewer prefills the accepted archive");
         check(child<QTableWidget>(*view,"spaceradTargetFluenceBins")->rowCount()==26,"Viewer displays six species with underflow and overflow plus total and other");
-        const auto response=out+"/response.csv";
-        write(response,"device_id,metric,particle,energy_MeV,response,response_unit,angular_basis,reference\n"
-                       "Target,ddd,proton,9,2,MeV_cm2_per_g,isotropic_omnidirectional,Synthetic fixture\n"
-                       "Target,ddd,proton,12,2,MeV_cm2_per_g,isotropic_omnidirectional,Synthetic fixture\n");
+        const auto score=Json::parse(accepted.toStdString()).at("target_fluence").at("history_response");
+        check(score.at("standard_error").is_number()&&score.at("standard_error")>0,"Desktop archive contains a positive history response standard error");
+        check(child<QPushButton>(*view,"spaceradTargetFluenceExport")->isEnabled()&&
+              child<QPlainTextEdit>(*view,"spaceradTargetFluenceFolded")->toPlainText().contains("MC"),
+              "Viewer displays pinned history response uncertainty without reopening the CSV");
+        check(view->grab().save(out+"/review.png"),"Review screenshot saved");
         child<QLineEdit>(*view,"spaceradTargetFluenceResponse")->setText(response);
         child<QPushButton>(*view,"spaceradTargetFluenceFold")->click();
         auto* exportButton=child<QPushButton>(*view,"spaceradTargetFluenceExport");
         check(exportButton->isEnabled()&&!child<QPlainTextEdit>(*view,"spaceradTargetFluenceFolded")->toPlainText().isEmpty(),"Desktop folds the verified local fluence");
         app.processEvents();
-        check(view->grab().save(out+"/review.png"),"Review screenshot saved");
         child<QLineEdit>(*view,"spaceradTargetFluenceResponse")->setText(out+"/missing.csv");
         check(!exportButton->isEnabled(),"Changing response clears stale export");
         child<QPushButton>(*view,"spaceradTargetFluenceFold")->click();

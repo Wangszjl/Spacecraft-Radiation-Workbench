@@ -45,14 +45,17 @@ public:
                 if(upper==spec.edges.end())++s.edepOverflow[entry.first];else ++bins[std::size_t(upper-spec.edges.begin()-1)];}
         }
         if(!s.fluenceMoments.empty()){
-            double total=0;
+            double total=0,response=0;
+            const auto& coefficients=s.fluence.responseCoefficients;
             for(const auto& [index,length]:s.fluenceEvent){
                 auto& m=s.fluenceMoments.at(index);
                 padZeroHistories(m,s.eventId);
                 m.add(length*s.eventWeight);
                 total+=length;
+                if(!coefficients.empty()&&coefficients.at(index))response+=length * (*coefficients[index]);
             }
             s.fluenceTotal.add(total*s.eventWeight);
+            if(!coefficients.empty())s.historyResponse.add(response*s.eventWeight);
         }
         int n=event->GetEventID()+1;
         if(n%std::max(1,s.project.events/100)==0 || n==s.project.events)

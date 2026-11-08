@@ -187,10 +187,19 @@ int analyze(QCoreApplication& app, const QCommandLineParser& parser, Reporter& r
         const auto bytes=file.read(65537);
         if(bytes.size()>65536||!file.atEnd()||file.error()!=QFileDevice::NoError)
             throw std::runtime_error("Cannot read bounded fluence settings");
-        const auto spec=engine::TargetFluenceSpec::fromJson(Json::parse(bytes.toStdString()));
+        auto settings=Json::parse(bytes.toStdString());
+        if(parser.isSet("history-response")){
+            if(!settings.is_object()||settings.contains("response_table"))
+                throw std::runtime_error("Choose exactly one history response table");
+            engine::TargetFluenceSpec::fromJson(settings);
+            settings["schema"]="spacerad.target-fluence-settings/2";
+            settings["response_table"]=loadDeviceResponseCsv(parser.value("history-response")).toJson();
+        }
+        const auto spec=engine::TargetFluenceSpec::fromJson(settings);
         spec.volume(loaded.project);
         fluence=spec.toJson();
     }
+    if(parser.isSet("history-response")&&fluence.is_null())throw std::runtime_error("--history-response requires --fluence-settings");
     int seconds = 0;
     if (parser.isSet("timeout-seconds")) {
         bool ok = false;
@@ -300,6 +309,7 @@ int main(int argc, char** argv) {
         {{"o", "output"}, "New output directory (run, scan or fold-response).", "directory"},
         {"response", "Device response CSV (fold-response or fold-local-response).", "file"},
         {"fluence-settings", "Optional target fluence settings JSON (run only).", "file"},
+        {"history-response", "Response CSV to score per primary history; requires fluence settings (run only).", "file"},
         {"scan-settings", "Shielding scan settings JSON (plan-scan or scan).", "file"},
         {"job", "Completed archive directory (inspect-result, inspect-scan or inspect-response).", "directory"},
         {"baseline", "Baseline completed job directory (compare only).", "directory"},
@@ -317,7 +327,7 @@ int main(int argc, char** argv) {
         const auto command = positional[0];
         for (const auto& option : parser.optionNames()) {
             QString canonical = option == "p" ? "project" : option == "r" ? "runtime" : option == "o" ? "output" : option;
-            const bool allowed = (command == "run" && QStringList{"project", "runtime", "output", "histories", "timeout-seconds", "verbose","fluence-settings"}.contains(canonical)) ||
+            const bool allowed = (command == "run" && QStringList{"project", "runtime", "output", "histories", "timeout-seconds", "verbose","fluence-settings","history-response"}.contains(canonical)) ||
                 (command == "validate" && (canonical == "project" || canonical == "histories")) ||
                 (command == "inspect-runtime" && canonical == "runtime") || (command == "inspect-result" && canonical == "job") ||
                 (command == "compare" && (canonical == "baseline" || canonical == "candidate")) ||

@@ -35,6 +35,17 @@ std::optional<std::pair<Json,QString>> configureTargetFluence(QWidget* parent,co
     auto* edges=new QLineEdit("0.000001, 0.1, 0.5, 1, 10, 30, 100",dialog);
     edges->setObjectName("spaceradTargetFluenceEdges");
     form->addRow(QObject::tr("能箱边界 MeV"),edges);
+    auto* responseRow=new QHBoxLayout;
+    auto* responseFile=new QLineEdit(dialog);
+    responseFile->setObjectName("spaceradHistoryResponseInput");
+    responseFile->setPlaceholderText(QObject::tr("留空则只计算注量"));
+    responseRow->addWidget(responseFile);
+    auto* browseResponse=new QPushButton(QObject::tr("选择 CSV"),dialog);responseRow->addWidget(browseResponse);
+    form->addRow(QObject::tr("逐历史响应（可选）"),responseRow);
+    QObject::connect(browseResponse,&QPushButton::clicked,dialog,[alive,responseFile]{
+        const auto file=QFileDialog::getOpenFileName(alive.data(),QObject::tr("选择逐历史响应 CSV"),{},QObject::tr("CSV (*.csv)"));
+        if(alive&&!file.isEmpty())responseFile->setText(file);
+    });
     auto* output=new QLineEdit(path,dialog);
     output->setObjectName("spaceradTargetFluenceOutput");
     form->addRow(QObject::tr("新任务目录"),output);
@@ -54,8 +65,14 @@ std::optional<std::pair<Json,QString>> configureTargetFluence(QWidget* parent,co
                 if(!ok)throw std::runtime_error("Energy edges must be numeric");
                 values.push_back(value);
             }
-            auto spec=engine::TargetFluenceSpec::fromJson({{"schema","spacerad.target-fluence-settings/1"},{"target_id",target->currentText().toStdString()},{"energy_edges_MeV",values}});
+            Json settings={{"schema","spacerad.target-fluence-settings/1"},{"target_id",target->currentText().toStdString()},{"energy_edges_MeV",values}};
+            if(!responseFile->text().trimmed().isEmpty()){
+                settings["schema"]="spacerad.target-fluence-settings/2";
+                settings["response_table"]=loadDeviceResponseCsv(responseFile->text()).toJson();
+            }
+            auto spec=engine::TargetFluenceSpec::fromJson(settings);
             spec.volume(p);
+            if(spec.toJson().dump().size()>65536)throw std::runtime_error("Fluence settings snapshot exceeds 64 KiB");
             if(output->text().trimmed().isEmpty()||!QFileInfo(output->text()).isAbsolute()||QFileInfo::exists(output->text()))
                 throw std::runtime_error("Choose a new absolute job directory");
             chosen=std::make_pair(spec.toJson(),output->text());dialog->accept();
@@ -80,7 +97,7 @@ class Review final:public QDialog {
     QPushButton *fold,*exportButton;
     Json report;
     void clearFold(){report=nullptr;folded->clear();exportButton->setEnabled(false);}
-    std::optional<ArchivedRun> load(){
+    std::optional<ArchivedRun> load(bool showPinned=true){
         clearFold();bins->setRowCount(0);fold->setEnabled(false);
         try{
             auto run=loadArchivedRun(archive->text());
@@ -100,12 +117,26 @@ class Review final:public QDialog {
             }
             status->setText(tr("档案已核验：%1。零命中能箱的标准误未知。").arg(text(spec.at("target_id"))));
             fold->setEnabled(true);
+            if(showPinned&&f.contains("history_response")){
+                report=f.at("history_response");
+                const auto identity=run.summary();
+                report["transport_result_sha256"]=identity.at("result_sha256");
+                report["project_sha256"]=identity.at("project_sha256");
+                report["fluence_settings_sha256"]=f.at("settings_sha256");
+                const auto& state=report.at("status");
+                const auto label=state=="estimated"?tr("已估计"):state=="incomplete_observed_coverage"?tr("观测覆盖不完整"):
+                    state=="no_observed_fluence"?tr("未观测到靶区注量"):tr("未观测到正响应");
+                folded->setPlainText(tr("输运时固定的逐历史响应 · %1\n%2：%3 %4\n逐历史 MC 标准误：%5\n未覆盖的观测能箱：%6。标准误不包含器件标定及分箱误差。")
+                    .arg(label,text(report.at("metric")),text(report.at("observed_folded_value")),text(report.at("result_unit")),
+                         text(report.at("standard_error")),text(report.at("uncovered_observed_bins"))));
+                exportButton->setEnabled(true);
+            }
             return run;
         }catch(const std::exception& e){status->setText(QString::fromUtf8(e.what()));}
         return std::nullopt;
     }
     void foldResponse(){
-        const auto run=load();
+        const auto run=load(false);
         if(!run)return;
         try{
             report=foldTargetFluenceResponse(*run,loadDeviceResponseCsv(response->text()));
@@ -137,7 +168,7 @@ public:
         auto* buttons=new QHBoxLayout;outer->addLayout(buttons);
         auto add=[&](const QString& title,const char* name){auto* b=new QPushButton(title,this);b->setObjectName(name);buttons->addWidget(b);return b;};
         auto* inspect=add(tr("核验档案"),"spaceradTargetFluenceInspect");
-        fold=add(tr("折合局部响应"),"spaceradTargetFluenceFold");
+        fold=add(tr("离线能箱折合"),"spaceradTargetFluenceFold");
         exportButton=add(tr("导出响应 JSON"),"spaceradTargetFluenceExport");
         fold->setEnabled(false);exportButton->setEnabled(false);
         auto* close=add(tr("关闭"),"spaceradTargetFluenceClose");

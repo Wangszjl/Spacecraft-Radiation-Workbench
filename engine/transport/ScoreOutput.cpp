@@ -86,7 +86,8 @@ Json buildScores(const State& state) {
         validateVoxelResult(project,result);
     }
     if(!state.fluenceMoments.empty())
-        result["target_fluence"]=makeTargetFluence(project,state.fluence,state.fluenceHash,state.fluenceMoments,state.fluenceTotal);
+        result["target_fluence"]=makeTargetFluence(project,state.fluence,state.fluenceHash,state.fluenceMoments,state.fluenceTotal,
+            state.fluence.responseCoefficients.empty()?nullptr:&state.historyResponse);
     return result;
 }
 }
