@@ -2,6 +2,7 @@
 #include "spacerad/Results.h"
 #include "spacerad/ImportanceReview.h"
 #include "spacerad/ShieldingScan.h"
+#include "spacerad/DeviceResponse.h"
 #include "Geometry.h"
 #include "runtime/ProjectFile.h"
 #include <QCommandLineParser>
@@ -279,12 +280,13 @@ int main(int argc, char** argv) {
     parser.setApplicationDescription("SpaceRad project validation and shared-service analysis. Machine commands emit NDJSON.");
     const auto help = parser.addHelpOption();
     const auto version = parser.addVersionOption();
-    parser.addPositionalArgument("command", "validate | inspect-runtime | run | inspect-result | compare | plan-scan | scan | inspect-scan");
+    parser.addPositionalArgument("command", "validate | inspect-runtime | run | inspect-result | compare | plan-scan | scan | inspect-scan | fold-response | inspect-response");
     parser.addOptions({{{"p", "project"}, "Input project JSON.", "file"},
         {{"r", "runtime"}, "Runtime JSON; default: runtime.json beside the executable.", "file"},
-        {{"o", "output"}, "New job/scan directory (run or scan).", "directory"},
+        {{"o", "output"}, "New output directory (run, scan or fold-response).", "directory"},
+        {"response", "Device response CSV (fold-response only).", "file"},
         {"scan-settings", "Shielding scan settings JSON (plan-scan or scan).", "file"},
-        {"job", "Completed job directory (inspect-result only).", "directory"},
+        {"job", "Completed archive directory (inspect-result, inspect-scan or inspect-response).", "directory"},
         {"baseline", "Baseline completed job directory (compare only).", "directory"},
         {"candidate", "Candidate completed job directory (compare only).", "directory"},
         {"histories", "Override histories (2..100000000).", "count"},
@@ -295,7 +297,7 @@ int main(int argc, char** argv) {
     if (parser.isSet(version)) { std::cout << "spacerad_cli " << SPACERAD_APP_VERSION << '\n'; return 0; }
     try {
         const auto positional = parser.positionalArguments();
-        if (positional.size() != 1 || !QStringList{"validate", "inspect-runtime", "run", "inspect-result", "compare", "plan-scan", "scan", "inspect-scan"}.contains(positional[0]))
+        if (positional.size() != 1 || !QStringList{"validate", "inspect-runtime", "run", "inspect-result", "compare", "plan-scan", "scan", "inspect-scan", "fold-response", "inspect-response"}.contains(positional[0]))
             throw std::runtime_error("Choose exactly one command; use --help for supported commands");
         const auto command = positional[0];
         for (const auto& option : parser.optionNames()) {
@@ -306,7 +308,8 @@ int main(int argc, char** argv) {
                 (command == "compare" && (canonical == "baseline" || canonical == "candidate")) ||
                 (command == "plan-scan" && QStringList{"project","histories","scan-settings"}.contains(canonical)) ||
                 (command == "scan" && QStringList{"project","histories","scan-settings","runtime","output","timeout-seconds","verbose"}.contains(canonical)) ||
-                (command == "inspect-scan" && canonical == "job");
+                ((command == "inspect-scan" || command == "inspect-response") && canonical == "job") ||
+                (command == "fold-response" && QStringList{"project","response","output"}.contains(canonical));
             if (!allowed) throw std::runtime_error("Option is not supported by this command");
             if (parser.values(canonical).size() > 1) throw std::runtime_error("Duplicate option value");
         }
@@ -314,6 +317,19 @@ int main(int argc, char** argv) {
         if (command == "scan") return scan(app, parser, reporter);
         if (command == "plan-scan") {const auto input=loadInput(parser);reporter.event("scan-planned",{{"exit_code",0},{"plan",planShieldingScan(input.project,scanSettings(parser))}});return 0;}
         if (command == "inspect-scan") {reporter.event("archived-scan",{{"exit_code",0},{"report",loadShieldingScan(parser.value("job"))}});return 0;}
+        if (command == "fold-response") {
+            if (parser.value("response").trimmed().isEmpty() || parser.value("output").trimmed().isEmpty())
+                throw std::runtime_error("A response CSV and a new output directory are required");
+            const auto input=loadInput(parser);
+            const auto output=QFileInfo(parser.value("output")).absoluteFilePath();
+            const auto report=saveDeviceResponseStudy(input.project,parser.value("response"),output);
+            reporter.event("response-folded",{{"exit_code",0},{"output_directory",utf8(output)},{"report",report}});
+            return 0;
+        }
+        if (command == "inspect-response") {
+            reporter.event("archived-response",{{"exit_code",0},{"report",loadDeviceResponseStudy(parser.value("job"))}});
+            return 0;
+        }
         if (command == "inspect-runtime") return inspect(loadRuntimeFile(runtimePath(parser)), reporter);
         if (command == "inspect-result") {
             const auto run = loadArchivedRun(parser.value("job"));

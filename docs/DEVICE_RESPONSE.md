@@ -16,4 +16,17 @@ DDD 输出为 NIEL 响应折合后的 MeV/g 及对应 NIEL Gy；它不是 DPA �
 
 桌面点击“DDD/SEE 响应筛查”后选择 CSV 和新的输出目录；结果可导出 CSV／JSON，历史目录会重新核对 SHA 后离线重算。SDK 使用 `spacerad/DeviceResponse.h` 的 `saveDeviceResponseStudy`、`loadDeviceResponseStudy` 和 `deviceResponseCsv`。
 
+新版在源谱网格与响应网格的所有节点处分段，解析积分每段的乘积。分箱常值谱在跳变点采用该区间自身的端点极限；旧算法在分箱边界可能混入邻箱的值。新版报告为 `spacerad.device-response-study/2`。打开旧版档案时先核对原始输入及旧报告的哈希，再显示按新版重算的结果，保留旧文件。报告以 `archive_review=legacy_inputs_recomputed_v2` 标记。需要持久化修正结果时，在新目录重新折合。
+
+蒙特卡罗重要性抽样设置可以保留在工程中。该功能只使用工程中的物理谱；不读取输运结果，也不对谱施加抽样权重。
+
+同一服务可用于批量处理，无需 Geant4 或 Python：
+
+```powershell
+spacerad_cli fold-response --project examples/projects/spacecraft-tid-assembly.json --response examples/device-response/synthetic-obc-ddd.csv --output reports/response-new
+spacerad_cli inspect-response --job reports/response-new
+```
+
+示例 DDD 与 SEE 表仅用于软件演示，没有器件标定含义。使用真实器件前，应替换为适用工况的响应曲线。
+
 后续仍需完成 Geant4 位移损伤／DPA 物理验证、SEE 事件和器件结构模型、实验标定，以及代表性 CAD 屏蔽后的器件响应谱。

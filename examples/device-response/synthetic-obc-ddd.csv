@@ -1,0 +1,7 @@
+device_id,metric,particle,energy_MeV,response,response_unit,angular_basis,reference
+OBC_Si,ddd,e-,0.1,0.001,MeV_cm2_per_g,isotropic_omnidirectional,SYNTHETIC numeric fixture only
+OBC_Si,ddd,e-,0.6,0.003,MeV_cm2_per_g,isotropic_omnidirectional,SYNTHETIC numeric fixture only
+OBC_Si,ddd,e-,4,0.005,MeV_cm2_per_g,isotropic_omnidirectional,SYNTHETIC numeric fixture only
+OBC_Si,ddd,proton,1,0.02,MeV_cm2_per_g,isotropic_omnidirectional,SYNTHETIC numeric fixture only
+OBC_Si,ddd,proton,11,0.01,MeV_cm2_per_g,isotropic_omnidirectional,SYNTHETIC numeric fixture only
+OBC_Si,ddd,proton,100,0.004,MeV_cm2_per_g,isotropic_omnidirectional,SYNTHETIC numeric fixture only
