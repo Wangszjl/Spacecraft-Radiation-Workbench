@@ -32,6 +32,7 @@ on:
       - 'tools/ae8ap8_ephemeris.py'
       - 'tools/check_ae8ap8_example.py'
       - 'tools/check_binned_device_response.py'
+      - 'tools/check_target_fluence.py'
       - 'src/DeviceResponse.cpp'
       - 'include/spacerad/DeviceResponse.h'
       - 'docs/DEVICE_RESPONSE.md'
@@ -74,6 +75,7 @@ on:
       - 'tools/ae8ap8_ephemeris.py'
       - 'tools/check_ae8ap8_example.py'
       - 'tools/check_binned_device_response.py'
+      - 'tools/check_target_fluence.py'
       - 'src/DeviceResponse.cpp'
       - 'include/spacerad/DeviceResponse.h'
       - 'docs/DEVICE_RESPONSE.md'
@@ -145,6 +147,12 @@ jobs:
           --runtime build/worker-runtime/runtime.json
           --service-test build/worker-ci/test_service_runtime
           --output-dir build/worker-acceptance
+      - name: Verify target fluence and local response with real transport
+        run: >-
+          python tools/check_target_fluence.py
+          --cli build/worker-ci/spacerad_cli
+          --runtime build/worker-runtime/runtime.json
+          --output-dir build/target-fluence-acceptance
       - name: Run public CLI integration acceptance
         run: >-
           python tools/check_cli_runtime.py
@@ -265,6 +273,10 @@ jobs:
             build/worker-runtime/*.json
             build/worker-acceptance/**/*.json
             build/worker-acceptance/**/*.log
+            build/target-fluence-acceptance/**/*.json
+            build/target-fluence-acceptance/**/*.csv
+            build/target-fluence-acceptance/**/*.ndjson
+            build/target-fluence-acceptance/**/*.log
             build/cli-acceptance/**/*.json
             build/cli-acceptance/**/*.log
             build/results-acceptance/**/*.json

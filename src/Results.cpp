@@ -3,6 +3,7 @@
 #include <spacerad/engine/SourceSampling.h>
 #include "Geometry.h"
 #include "runtime/ProjectFile.h"
+#include "runtime/TargetFluence.h"
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
@@ -106,6 +107,10 @@ ArchivedRun loadArchivedRun(const QString& directory) {
     // last_loaded_input records the historical filename, so relocate directories freely,
     // but retain the canonical project.json snapshot filename.
     require(r.at("project") == p.toJson() && r.at("histories") == p.events, "Archive result/project identity mismatch");
+    const auto fluencePath=dir.filePath("fluence-settings.json");
+    const auto fluenceBytes=QFileInfo::exists(fluencePath)?read(fluencePath,65536):QByteArray{};
+    engine::validateTargetFluence(p,r,fluenceBytes.isEmpty()?Json(nullptr):parse(fluenceBytes),fluenceBytes.isEmpty()?"":hash(fluenceBytes));
+    if(!fluenceBytes.isEmpty())require(read(fluencePath,65536)==fluenceBytes,"Fluence settings changed while loading");
     engine::validateImportanceResult(p,r);
     require(near(number(r.at("expected_primaries")), p.expectedPrimaries()), "Archive source normalization mismatch");
     const auto& audit = r.at("runtime_audit");
@@ -140,6 +145,7 @@ Json ArchivedRun::summary() const {
         {"engine_version", result_.at("engine_version")}, {"expected_primaries", result_.at("expected_primaries")},
         {"targets", result_.at("targets")}, {"capabilities", result_.at("capability_status")},
         {"verification", "offline_pair_consistency_only_not_producer_authentication"}};
+    if(result_.contains("target_fluence"))summary["target_fluence"]=result_.at("target_fluence");
     if(!project_.sourceSampling.is_null())summary["importance_review"]=importanceReview(project_,result_);
     return summary;
 }

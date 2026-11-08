@@ -3,6 +3,7 @@
 #include <spacerad/engine/SourceSampling.h>
 #include "runtime/ProjectFile.h"
 #include "runtime/VoxelStatistics.h"
+#include "runtime/TargetFluence.h"
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
@@ -20,7 +21,7 @@ QByteArray digest(const QByteArray& bytes){return QCryptographicHash::hash(bytes
 QByteArray executableHash(const QString& path){QFile f(path);require(f.open(QIODevice::ReadOnly),"Cannot read Worker executable");QCryptographicHash hash(QCryptographicHash::Sha256);require(hash.addData(&f),"Cannot fingerprint Worker executable");return hash.result().toHex();}
 }
 struct AnalysisService::Impl {
- RuntimeOptions options;QProcess process;QString state="ready",directory;QByteArray accepted,pending,input,workerHash,contextHash,manifestHash;Json expectedProject;int histories=0;bool cancelled=false;QFile log;
+ RuntimeOptions options;QProcess process;QString state="ready",directory;QByteArray accepted,pending,input,workerHash,contextHash,manifestHash;Json expectedProject,fluence;QByteArray fluenceBytes;int histories=0;bool cancelled=false;QFile log;
 };
 QProcessEnvironment AnalysisService::childEnvironment(const RuntimeOptions& options){
  require(QFileInfo(options.worker).isAbsolute()&&QFileInfo(options.worker).isFile(),"Configure an absolute existing Worker executable");
@@ -57,6 +58,8 @@ AnalysisService::AnalysisService(QObject* parent):QObject(parent),d(new Impl){
    require(r.at("project_sha256")==digest(d->input).toStdString()&&r.at("worker").at("sha256")==d->workerHash.toStdString()&&r.at("histories")==d->histories&&r.at("project")==d->expectedProject,"Result does not match launch identity");
    const auto& audit=r.at("runtime_audit");require(audit.at("status")=="ready"&&audit.at("manifest_sha256")==d->manifestHash.toStdString()&&audit.at("build_context_sha256")==d->contextHash.toStdString(),"Result runtime differs from launch assets");
    std::set<std::string> expected;auto p=Project::fromJson(d->expectedProject);const auto compiled=spacerad::engine::compileGeometry(p);for(const auto& v:compiled.volumes)if(v.sensitive)expected.insert(v.id);
+   if(!d->fluence.is_null())require(read(d->directory+"/fluence-settings.json",65536)==d->fluenceBytes,"Fluence settings snapshot changed");
+   spacerad::engine::validateTargetFluence(p,r,d->fluence,d->fluence.is_null()?"":digest(d->fluenceBytes).toStdString());
    spacerad::engine::validateVoxelResult(p,r);
    spacerad::engine::validateImportanceResult(p,r);
    if(!r.at("targets").is_array()||r.at("targets").size()!=expected.size())throw std::runtime_error("Sensitive target count differs: expected="+std::to_string(expected.size())+", actual="+std::to_string(r.at("targets").size())+", IDs="+Json(expected).dump());
@@ -68,12 +71,20 @@ AnalysisService::AnalysisService(QObject* parent):QObject(parent),d(new Impl){
 AnalysisService::~AnalysisService(){disconnect(&d->process,nullptr,this,nullptr);if(d->process.state()!=QProcess::NotRunning){d->process.kill();d->process.waitForFinished(3000);}}
 void AnalysisService::configure(const RuntimeOptions& options){require(!running(),"Cannot change runtime while running");d->options=options;d->accepted.clear();d->state="ready";emit stateChanged(d->state);}
 RuntimeOptions AnalysisService::runtime() const{return d->options;}
-void AnalysisService::start(const Project& project,const QString& directory){
- require(!running(),"Analysis already running");project.validate();auto env=childEnvironment(d->options);auto context=read(QFileInfo(d->options.worker).dir().filePath("radiation-build.json"),1024*1024);auto manifest=read(QFileInfo(d->options.worker).dir().filePath("radiation-datasets.txt"),65536);
+void AnalysisService::start(const Project& project,const QString& directory){start(project,directory,nullptr);}
+void AnalysisService::start(const Project& project,const QString& directory,const Json& targetFluenceSettings){
+ require(!running(),"Analysis already running");project.validate();Json fluence=nullptr;
+ if(!targetFluenceSettings.is_null()){auto spec=engine::TargetFluenceSpec::fromJson(targetFluenceSettings);spec.volume(project);fluence=spec.toJson();}
+ auto env=childEnvironment(d->options);auto context=read(QFileInfo(d->options.worker).dir().filePath("radiation-build.json"),1024*1024);auto manifest=read(QFileInfo(d->options.worker).dir().filePath("radiation-datasets.txt"),65536);
  require(!directory.trimmed().isEmpty()&&QFileInfo(directory).isAbsolute()&&!QFileInfo::exists(directory),"Choose a new absolute output directory");auto input=QByteArray::fromStdString(project.toJson().dump(2));require(input.size()<=8*1024*1024,"Project exceeds 8 MiB launch budget");auto workerHash=executableHash(d->options.worker);
  require(QDir().mkpath(directory),"Cannot create job directory");QSaveFile f(directory+"/project.json");require(f.open(QIODevice::WriteOnly)&&f.write(input)==input.size()&&f.commit(),"Cannot save project snapshot");
+ d->fluence=fluence;d->fluenceBytes.clear();
+ if(!fluence.is_null()){
+    d->fluenceBytes=QByteArray::fromStdString(fluence.dump(2));QSaveFile settings(directory+"/fluence-settings.json");
+    require(settings.open(QIODevice::WriteOnly)&&settings.write(d->fluenceBytes)==d->fluenceBytes.size()&&settings.commit(),"Cannot save fluence settings snapshot");
+ }
  d->directory=QFileInfo(directory).absoluteFilePath();d->input=input;d->expectedProject=spacerad::engine::loadProjectFile(directory+"/project.json").project.toJson();d->workerHash=workerHash;d->contextHash=digest(context);d->manifestHash=digest(manifest);d->histories=project.events;d->accepted.clear();d->pending.clear();d->cancelled=false;
- d->log.setFileName(directory+"/worker.log");require(d->log.open(QIODevice::WriteOnly|QIODevice::NewOnly),"Cannot create Worker log");d->process.setProcessEnvironment(env);d->process.setWorkingDirectory(d->directory);d->process.setProgram(d->options.worker);d->process.setArguments({d->directory+"/project.json",d->directory+"/result.json"});d->state="running";emit stateChanged(d->state);if(d->cancelled){d->log.close();d->state="cancelled";emit stateChanged(d->state);return;}emit progress(0,project.events);if(d->cancelled){d->log.close();d->state="cancelled";emit stateChanged(d->state);return;}d->process.start();
+ d->log.setFileName(directory+"/worker.log");require(d->log.open(QIODevice::WriteOnly|QIODevice::NewOnly),"Cannot create Worker log");d->process.setProcessEnvironment(env);d->process.setWorkingDirectory(d->directory);d->process.setProgram(d->options.worker);QStringList args{d->directory+"/project.json",d->directory+"/result.json"};if(!fluence.is_null()){args.prepend("--target-fluence");args.append(d->directory+"/fluence-settings.json");}d->process.setArguments(args);d->state="running";emit stateChanged(d->state);if(d->cancelled){d->log.close();d->state="cancelled";emit stateChanged(d->state);return;}emit progress(0,project.events);if(d->cancelled){d->log.close();d->state="cancelled";emit stateChanged(d->state);return;}d->process.start();
 }
 void AnalysisService::cancel(){if(!running())return;d->cancelled=true;d->accepted.clear();d->process.kill();}
 bool AnalysisService::running() const{return d->state=="running";}

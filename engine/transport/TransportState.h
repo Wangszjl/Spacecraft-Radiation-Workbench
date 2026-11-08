@@ -1,5 +1,6 @@
 #pragma once
 #include "RadiationProject.h"
+#include "runtime/TargetFluence.h"
 #include <map>
 #include <set>
 
@@ -48,6 +49,11 @@ struct State {
     std::map<int,std::array<double,3>> voxelEvent;
     std::map<std::string,std::vector<std::int64_t>> edepBins;
     std::map<std::string,std::int64_t> edepOverflow;
+    TargetFluenceSpec fluence;
+    std::string fluenceHash;
+    std::map<size_t,double> fluenceEvent;
+    std::vector<Moments> fluenceMoments;
+    Moments fluenceTotal;
     int eventId = 0;
     double eventWeight = 1;
     bool tailEvent = false;
@@ -60,6 +66,6 @@ G4VUserPrimaryGeneratorAction* makeSource(State&);
 G4UserEventAction* makeEventAction(State&);
 G4UserSteppingAction* makeStepAction(State&);
 G4VModularPhysicsList* makePhysics(const Project&);
-Json runTransport(const Project&);
+Json runTransport(const Project&,const Json& fluence=nullptr,const std::string& settingsHash={});
 Json buildScores(const State&);
 } // namespace spacerad::engine::transport

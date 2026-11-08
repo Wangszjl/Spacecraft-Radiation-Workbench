@@ -84,6 +84,9 @@ Json buildScores(const State& state) {
         result["voxel_field"]=makeVoxelField(project,state.voxelAudit,moments,project.events);result["edep_spectra"]=Json::object();auto spec=voxelSpec(project.voxelScoring);
         for(const auto& h:state.edepBins)result["edep_spectra"][h.first]=makeEdepSpectrum(spec.edges,h.second,state.edepOverflow.count(h.first)?state.edepOverflow.at(h.first):0,project.events);
         validateVoxelResult(project,result);
-    }return result;
+    }
+    if(!state.fluenceMoments.empty())
+        result["target_fluence"]=makeTargetFluence(project,state.fluence,state.fluenceHash,state.fluenceMoments,state.fluenceTotal);
+    return result;
 }
 }

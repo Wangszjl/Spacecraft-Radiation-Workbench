@@ -17,6 +17,7 @@ public:
  void configure(const RuntimeOptions&);
  RuntimeOptions runtime() const;
  void start(const Project&,const QString& newDirectory);
+ void start(const Project&,const QString& newDirectory,const Json& targetFluenceSettings);
  void cancel();
  bool running() const;
  QString state() const;

@@ -1,4 +1,5 @@
 #include "spacerad/DeviceResponse.h"
+#include "spacerad/Results.h"
 #include "Geometry.h"
 #include <QCryptographicHash>
 #include <QFile>
@@ -79,9 +80,71 @@ Json fold(const Project& project,const DeviceResponseTable& table){project.valid
     return {{"schema","spacerad.device-response-study/2"},{"integration_method","piecewise_product_exact_v2"},{"sampling_basis","physical_spectrum_only; Monte Carlo sampling settings are not used"},{"metric",table.metric},{"spectrum_basis","Unshielded project environment spectrum folded directly; spacecraft attenuation and target-local secondaries are not applied"},{"response_unit",table.responseUnit},{"angular_basis",table.angularBasis},{"response_source",table.sourceFile},{"source_project",project.toJson()},{"source_quantity",engine::quantityName(project.quantity)},{"duration_s",project.duration},{"rows",rows},{"uncertainty","Response table fold has no inferred calibration uncertainty, cross-section covariance or Monte Carlo uncertainty"},{"limitations",Json::array({"Screening fold only; not a Geant4 DDD/DPA or SEE-event transport simulation","No extrapolation outside supplied response curves","Response units, device state and citation are supplied by the caller","The input spectrum is folded without spacecraft shielding or target-local secondary spectra","DDD is nonionizing-energy response in MeV/g and NIEL dose, not DPA or 1-MeV-neutron-equivalent fluence"})}};}
 }
 Json DeviceResponseTable::toJson() const{Json items=Json::array();for(const auto& curve:curves)items.push_back({{"device_id",curve.deviceId},{"particle",curve.particle},{"reference",curve.reference},{"energy_MeV",curve.energy_MeV},{"response",curve.values}});return {{"schema","spacerad.device-response-table/1"},{"metric",metric},{"response_unit",responseUnit},{"angular_basis",angularBasis},{"source_file",sourceFile},{"curves",items}};}
-void DeviceResponseTable::validate() const{need(metric=="ddd"||metric=="see","Response metric must be ddd or see");need(angularBasis=="isotropic_omnidirectional","Unsupported or missing response angular basis");need(responseUnit==(metric=="ddd"?"MeV_cm2_per_g":"cm2_per_device"),"Response unit must match metric (MeV_cm2_per_g for DDD, cm2_per_device for SEE)");need(!curves.empty()&&curves.size()<=1024,"Response curve count must be 1..1024");need(sourceFile.is_object()&&sourceFile.contains("file_name")&&sourceFile.contains("size_bytes")&&sourceFile.at("size_bytes").is_number_integer()&&sourceFile.at("size_bytes").get<long long>()>=0&&sourceFile.contains("sha256")&&sourceFile.at("sha256").is_string()&&std::regex_match(sourceFile.at("sha256").get<std::string>(),std::regex("[a-f0-9]{64}")),"Response source identity is required");std::set<std::pair<std::string,std::string>> seen;for(const auto& curve:curves){need(!curve.deviceId.empty()&&curve.deviceId.size()<=128&&!curve.reference.empty()&&curve.reference.size()<=2048,"Response target and reference are required");need(curve.particle=="e-"||curve.particle=="proton"||curve.particle=="alpha"||curve.particle=="gamma"||curve.particle=="neutron","Unsupported response particle");need(seen.emplace(curve.deviceId,curve.particle).second,"Duplicate response curve for target/species");need(curve.energy_MeV.size()>=2&&curve.energy_MeV.size()<=4096&&curve.energy_MeV.size()==curve.values.size(),"Response curve requires 2..4096 paired points");for(size_t i=0;i<curve.energy_MeV.size();++i){need(std::isfinite(curve.energy_MeV[i])&&curve.energy_MeV[i]>0&&std::isfinite(curve.values[i])&&curve.values[i]>=0,"Response energies and values must be finite and nonnegative");if(i)need(curve.energy_MeV[i]>curve.energy_MeV[i-1],"Response energies must strictly increase");}}}
+void DeviceResponseTable::validate() const{need(metric=="ddd"||metric=="see","Response metric must be ddd or see");need(angularBasis=="isotropic_omnidirectional","Unsupported or missing response angular basis");need(responseUnit==(metric=="ddd"?"MeV_cm2_per_g":"cm2_per_device"),"Response unit must match metric (MeV_cm2_per_g for DDD, cm2_per_device for SEE)");need(!curves.empty()&&curves.size()<=1024,"Response curve count must be 1..1024");need(sourceFile.is_object()&&sourceFile.contains("file_name")&&sourceFile.contains("size_bytes")&&sourceFile.at("size_bytes").is_number_integer()&&sourceFile.at("size_bytes").get<long long>()>=0&&sourceFile.contains("sha256")&&sourceFile.at("sha256").is_string()&&std::regex_match(sourceFile.at("sha256").get<std::string>(),std::regex("[a-f0-9]{64}")),"Response source identity is required");std::set<std::pair<std::string,std::string>> seen;for(const auto& curve:curves){need(!curve.deviceId.empty()&&curve.deviceId.size()<=128&&!curve.reference.empty()&&curve.reference.size()<=2048,"Response target and reference are required");need(curve.particle=="e-"||curve.particle=="e+"||curve.particle=="proton"||curve.particle=="alpha"||curve.particle=="gamma"||curve.particle=="neutron","Unsupported response particle");need(seen.emplace(curve.deviceId,curve.particle).second,"Duplicate response curve for target/species");need(curve.energy_MeV.size()>=2&&curve.energy_MeV.size()<=4096&&curve.energy_MeV.size()==curve.values.size(),"Response curve requires 2..4096 paired points");for(size_t i=0;i<curve.energy_MeV.size();++i){need(std::isfinite(curve.energy_MeV[i])&&curve.energy_MeV[i]>0&&std::isfinite(curve.values[i])&&curve.values[i]>=0,"Response energies and values must be finite and nonnegative");if(i)need(curve.energy_MeV[i]>curve.energy_MeV[i-1],"Response energies must strictly increase");}}}
 DeviceResponseTable loadDeviceResponseCsv(const QString& path){return parseResponseCsv(readFile(path),QFileInfo(path).fileName());}
 Json foldDeviceResponseTable(const Project& project,const DeviceResponseTable& table){return fold(project,table);}
+Json foldTargetFluenceResponse(const ArchivedRun& run,const DeviceResponseTable& table){
+    table.validate();
+    need(run.result().contains("target_fluence"),"Archive has no verified target fluence; rerun with --fluence-settings");
+    const auto& field=run.result().at("target_fluence");
+    const auto& settings=field.at("settings");
+    const auto target=settings.at("target_id").get<std::string>();
+    const auto edges=settings.at("energy_edges_MeV").get<std::vector<double>>();
+    need(field.at("total").at("moments").at("nonzero_histories")>0,"No positive track-length histories; target response is unknown");
+    need(field.at("other_species").at("fluence_cm-2")==0,"Unmodeled particle species contributed; local response is incomplete");
+    std::map<std::string,const DeviceResponseCurve*> curves;
+    for(const auto& c:table.curves){
+        need(c.deviceId==target,"Local response CSV must refer only to the scored target");
+        curves.emplace(c.particle,&c);
+    }
+    double estimate=0,lower=0,upper=0;
+    Json components=Json::array();
+    for(const auto& [particle,bins]:field.at("species").items()){
+        need(bins.front().at("fluence_cm-2")==0&&bins.back().at("fluence_cm-2")==0,
+             "Observed underflow or overflow; rerun with adequate energy coverage");
+        double speciesEstimate=0;
+        size_t hits=0;
+        for(size_t i=1;i<edges.size();++i){
+            const double value=bins[i].at("fluence_cm-2");
+            if(value==0)continue;
+            ++hits;
+            const auto found=curves.find(particle);
+            need(found!=curves.end(),"Missing response for a particle with observed target fluence");
+            const auto& c=*found->second;
+            const double a=edges[i-1],b=edges[i];
+            need(c.energy_MeV.front()<=a&&b<=c.energy_MeV.back(),"Response must cover every observed bin in full");
+            const double start=responseAt(c,a);
+            double min=start,max=start,previous=start,x=a,average=0;
+            auto segment=[&](double next,double r){
+                average+=(next-x)/(b-a)*(previous/2+r/2);
+                min=std::min(min,r);max=std::max(max,r);
+                x=next;previous=r;
+            };
+            for(auto it=std::upper_bound(c.energy_MeV.begin(),c.energy_MeV.end(),a);it!=c.energy_MeV.end()&&*it<b;++it)
+                segment(*it,responseAt(c,*it));
+            segment(b,responseAt(c,b));
+            speciesEstimate+=value*average;
+            lower+=value*min;upper+=value*max;
+        }
+        estimate+=speciesEstimate;
+        components.push_back({{"particle",particle},{"observed_bins",hits},{"folded_observed_value",speciesEstimate}});
+    }
+    need(std::isfinite(estimate)&&std::isfinite(lower)&&std::isfinite(upper),"Local response overflow");
+    const auto identity=run.summary();
+    Json out={{"schema","spacerad.local-device-response/1"},{"target_id",target},{"metric",table.metric},
+              {"angular_basis",table.angularBasis},{"response_source",table.sourceFile},
+              {"transport_result_sha256",identity.at("result_sha256")},{"project_sha256",identity.at("project_sha256")},
+              {"fluence_settings_sha256",field.at("settings_sha256")},{"observed_folded_value",estimate},
+              {"observed_energy_bin_response_range",{lower,upper}},{"standard_error",nullptr},{"components",components},
+              {"result_unit",table.metric=="ddd"?"MeV_per_g":"expected_events_per_device"},
+              {"scope","Volume-averaged scalar target fluence; response assumes uniform density inside each observed bin"},
+              {"limitations",Json::array({"Energy bin range bounds the response of observed fluence only; not a confidence interval or bound on unobserved contributions",
+                  "Pre-step energy binning; no step-size or energy-grid convergence claim",
+                  "Bin covariance and complete response uncertainty are not estimated; zero-count bins are unresolved",
+                  "User-declared angle-averaged response; directional dependence and event-level device physics are not modeled"})}};
+    if(table.metric=="ddd")out["observed_niel_dose_Gy"]=estimate*1.602176634e-10;
+    return out;
+}
 Json runDeviceResponseStudy(const Project& project,const QByteArray& csvBytes,const QString& sourceName){auto table=parseResponseCsv(csvBytes,sourceName);return fold(project,table);}
 Json saveDeviceResponseStudy(const Project& project,const QString& responseCsvPath,const QString& newStudyDirectory) {
     const QFileInfo output(QDir::cleanPath(newStudyDirectory));

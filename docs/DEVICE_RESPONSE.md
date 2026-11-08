@@ -29,4 +29,4 @@ spacerad_cli inspect-response --job reports/response-new
 
 示例 DDD 与 SEE 表仅用于软件演示，没有器件标定含义。使用真实器件前，应替换为适用工况的响应曲线。
 
-后续仍需完成 Geant4 位移损伤／DPA 物理验证、SEE 事件和器件结构模型、实验标定，以及代表性 CAD 屏蔽后的器件响应谱。
+需要使用屏蔽后的靶区粒子谱时，可选[靶区轨迹长度计分与局部响应折合](TARGET_FLUENCE.md)。后续仍需完成 Geant4 位移损伤／DPA 物理验证、SEE 事件和器件结构模型、实验标定，以及代表性 CAD 的独立对照。

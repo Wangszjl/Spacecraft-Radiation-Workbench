@@ -238,17 +238,27 @@ int main(int argc,char** argv) {
                 {"output_schema",loaded.project.toJson().at("schema")},{"source_sha256",loaded.project.provenance.at("last_loaded_input").at("sha256")},
                 {"quantity",quantityName(loaded.project.quantity)}}).dump(2)<<std::endl;return 0;
         }
-        if(args.size()!=3) {
+        const bool withFluence=args.size()==5&&args[1]=="--target-fluence";
+        if(args.size()!=3&&!withFluence) {
             std::cerr<<"Usage: scdat_radiation_worker project.json result.json | --batch project options NEW_DIRECTORY | --inspect | --migrate input output | --material-report project report | --pin-materials input output | --expand-instances input output | --export-template project id output | --export-geometry project bundle | --import-geometry base bundle output | --geometry-report base bundle output | --inspect-spenvis file | --import-spenvis template source options output\n";return 2;
         }
-        if(QFile::exists(args[2])) throw std::runtime_error("Refusing to overwrite existing result; choose a new output path");
-        auto loaded=loadProjectFile(args[1]);auto project=std::move(loaded.project);
+        const auto inputPath=args[withFluence?2:1],outputPath=args[withFluence?3:2];
+        if(QFile::exists(outputPath)) throw std::runtime_error("Refusing to overwrite existing result; choose a new output path");
+        Json fluence=nullptr;std::string fluenceHash;
+        if(withFluence){
+            QFile f(args[4]);if(!f.open(QIODevice::ReadOnly)||f.size()<=0||f.size()>65536)throw std::runtime_error("Invalid fluence settings file");
+            const auto raw=f.read(65537);
+            if(raw.size()>65536||!f.atEnd()||f.error()!=QFileDevice::NoError)throw std::runtime_error("Cannot read bounded fluence settings");
+            fluence=TargetFluenceSpec::fromJson(Json::parse(raw.toStdString())).toJson();
+            fluenceHash=archiveSha(raw);
+        }
+        auto loaded=loadProjectFile(inputPath);auto project=std::move(loaded.project);
         auto runtime=auditRuntime();
         auto started=QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
-        auto result=transport::runTransport(project);
+        auto result=transport::runTransport(project,fluence,fluenceHash);
         result=addProvenance(std::move(result),project,loaded.bytes,started,runtime);
         result["input_schema"]=loaded.inputSchema;
-        writeResult(args[2],result);
-        std::cout<<"SCDAT_COMPLETED "<<args[2].toStdString()<<std::endl;return 0;
+        writeResult(outputPath,result);
+        std::cout<<"SCDAT_COMPLETED "<<outputPath.toStdString()<<std::endl;return 0;
     } catch(const std::exception& e) { std::cerr<<"SCDAT_ERROR "<<e.what()<<std::endl;return 1; }
 }

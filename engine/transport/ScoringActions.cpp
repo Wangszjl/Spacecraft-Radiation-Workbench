@@ -14,7 +14,7 @@ class Event final:public G4UserEventAction {
     State& s;
 public:
     explicit Event(State& state):s(state) {}
-    void BeginOfEventAction(const G4Event* event) override { s.event.clear(); s.voxelEvent.clear();s.primaryEntries.clear(); s.eventId=event->GetEventID(); }
+    void BeginOfEventAction(const G4Event* event) override { s.event.clear(); s.voxelEvent.clear();s.fluenceEvent.clear();s.primaryEntries.clear(); s.eventId=event->GetEventID(); }
     void EndOfEventAction(const G4Event* event) override {
         if(s.voxelPhysical){auto spec=voxelSpec(s.project.voxelScoring);std::array<double,3> sums{};
             for(const auto& e:s.voxelEvent){for(int k=0;k<3;++k){auto& m=s.voxelMoments.at(e.first)[k];padZeroHistories(m,s.eventId);m.add(e.second[k]);sums[k]+=e.second[k];}}
@@ -44,6 +44,16 @@ public:
                 auto upper=std::upper_bound(spec.edges.begin(),spec.edges.end(),energies[0]);
                 if(upper==spec.edges.end())++s.edepOverflow[entry.first];else ++bins[std::size_t(upper-spec.edges.begin()-1)];}
         }
+        if(!s.fluenceMoments.empty()){
+            double total=0;
+            for(const auto& [index,length]:s.fluenceEvent){
+                auto& m=s.fluenceMoments.at(index);
+                padZeroHistories(m,s.eventId);
+                m.add(length*s.eventWeight);
+                total+=length;
+            }
+            s.fluenceTotal.add(total*s.eventWeight);
+        }
         int n=event->GetEventID()+1;
         if(n%std::max(1,s.project.events/100)==0 || n==s.project.events)
             std::cout<<"SCDAT_PROGRESS "<<n<<" "<<s.project.events<<std::endl;
@@ -60,6 +70,19 @@ public:
         int cellIndex=-1;
         if(volume==s.voxelPhysical){name=voxelSpec(s.project.voxelScoring).volumeId;cellIndex=step->GetPreStepPoint()->GetTouchableHandle()->GetCopyNumber();
             if(cellIndex<0||cellIndex>=int(s.voxelMoments.size()))throw std::runtime_error("Invalid parameterised voxel copy index");}
+        if(!s.fluenceMoments.empty()&&name==s.fluence.target&&step->GetStepLength()>0){
+            const auto& species=fluenceSpecies();
+            const auto& particle=step->GetTrack()->GetDefinition()->GetParticleName();
+            const auto it=std::find(species.begin(),species.end(),particle);
+            size_t index=s.fluenceMoments.size()-1;
+            if(it!=species.end()){
+                const auto& edges=s.fluence.edges;
+                const double energy=step->GetPreStepPoint()->GetKineticEnergy()/MeV;
+                if(!std::isfinite(energy)||energy<0)throw std::runtime_error("Invalid track kinetic energy");
+                index=(it-species.begin())*(edges.size()+1)+(std::upper_bound(edges.begin(),edges.end(),energy)-edges.begin());
+            }
+            s.fluenceEvent[index]+=step->GetStepLength()/mm*step->GetPreStepPoint()->GetWeight();
+        }
         if(s.scores.count(name)) {
             if(step->GetTrack()->GetParentID()==0 && step->GetPreStepPoint()->GetStepStatus()==fGeomBoundary)
                 s.primaryEntries.insert(name);

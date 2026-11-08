@@ -10,9 +10,15 @@
 #include <memory>
 #include <stdexcept>
 namespace spacerad::engine::transport {
-Json runTransport(const Project& p) {
+Json runTransport(const Project& p,const Json& fluence,const std::string& settingsHash) {
     p.validate();
     State state(p);
+    if(!fluence.is_null()){
+        state.fluence=TargetFluenceSpec::fromJson(fluence);
+        state.fluence.volume(p);
+        state.fluenceHash=settingsHash;
+        state.fluenceMoments.resize(fluenceSpecies().size()*(state.fluence.edges.size()+1)+1);
+    }
     G4Random::setTheSeed(p.seed);
     auto manager=std::make_unique<G4RunManager>(); // serial baseline
     manager->SetUserInitialization(makeGeometry(state));
@@ -25,6 +31,7 @@ Json runTransport(const Project& p) {
     for(auto& cell:state.voxelMoments)for(auto& m:cell)padZeroHistories(m,p.events);
     for(const auto& entry:state.scores)
         if(entry.second.ionizing.count!=p.events) throw std::runtime_error("Run ended before all requested histories completed");
+    for(auto& m:state.fluenceMoments)padZeroHistories(m,p.events);
     return buildScores(state);
 }
 }

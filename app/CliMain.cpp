@@ -5,6 +5,7 @@
 #include "spacerad/DeviceResponse.h"
 #include "Geometry.h"
 #include "runtime/ProjectFile.h"
+#include "runtime/TargetFluence.h"
 #include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -178,6 +179,18 @@ int analyze(QCoreApplication& app, const QCommandLineParser& parser, Reporter& r
     auto loaded = loadInput(parser);
     if (parser.value("output").trimmed().isEmpty()) throw std::runtime_error("A new output directory is required");
     const auto output = QFileInfo(parser.value("output")).absoluteFilePath();
+    Json fluence=nullptr;
+    if(parser.isSet("fluence-settings")){
+        QFile file(parser.value("fluence-settings"));
+        if(!file.open(QIODevice::ReadOnly)||file.size()<=0||file.size()>65536)
+            throw std::runtime_error("Choose a fluence settings JSON file <=64 KiB");
+        const auto bytes=file.read(65537);
+        if(bytes.size()>65536||!file.atEnd()||file.error()!=QFileDevice::NoError)
+            throw std::runtime_error("Cannot read bounded fluence settings");
+        const auto spec=engine::TargetFluenceSpec::fromJson(Json::parse(bytes.toStdString()));
+        spec.volume(loaded.project);
+        fluence=spec.toJson();
+    }
     int seconds = 0;
     if (parser.isSet("timeout-seconds")) {
         bool ok = false;
@@ -227,6 +240,7 @@ int analyze(QCoreApplication& app, const QCommandLineParser& parser, Reporter& r
                 {"result_schema", result.at("schema")}, {"histories", result.at("histories")},
                 {"engine_version", result.at("engine_version")}, {"expected_primaries", result.at("expected_primaries")},
                 {"targets", result.at("targets")}, {"capabilities", result.at("capability_status")}};
+            if(result.contains("target_fluence")) summary["target_fluence"]=result.at("target_fluence");
             if(result.contains("source_importance")) summary["source_importance"]=result.at("source_importance");
             if(result.contains("source_importance")) summary["importance_review"]=importanceReview(Project::fromJson(result.at("project")),result);
             terminal = true;
@@ -258,7 +272,7 @@ int analyze(QCoreApplication& app, const QCommandLineParser& parser, Reporter& r
             reporter.event("launch", {{"source_project", utf8(QFileInfo(parser.value("project")).absoluteFilePath())},
                 {"source_sha256", loaded.project.provenance.at("last_loaded_input").at("sha256")},
                 {"output_directory", utf8(output)}, {"histories", loaded.project.events}});
-            service.start(loaded.project, output);
+            service.start(loaded.project, output,fluence);
             if (seconds) timeout.start(seconds * 1000);
             interrupts.start();
         } catch (const std::exception& error) {
@@ -280,11 +294,12 @@ int main(int argc, char** argv) {
     parser.setApplicationDescription("SpaceRad project validation and shared-service analysis. Machine commands emit NDJSON.");
     const auto help = parser.addHelpOption();
     const auto version = parser.addVersionOption();
-    parser.addPositionalArgument("command", "validate | inspect-runtime | run | inspect-result | compare | plan-scan | scan | inspect-scan | fold-response | inspect-response");
+    parser.addPositionalArgument("command", "validate | inspect-runtime | run | inspect-result | compare | plan-scan | scan | inspect-scan | fold-response | inspect-response | fold-local-response");
     parser.addOptions({{{"p", "project"}, "Input project JSON.", "file"},
         {{"r", "runtime"}, "Runtime JSON; default: runtime.json beside the executable.", "file"},
         {{"o", "output"}, "New output directory (run, scan or fold-response).", "directory"},
-        {"response", "Device response CSV (fold-response only).", "file"},
+        {"response", "Device response CSV (fold-response or fold-local-response).", "file"},
+        {"fluence-settings", "Optional target fluence settings JSON (run only).", "file"},
         {"scan-settings", "Shielding scan settings JSON (plan-scan or scan).", "file"},
         {"job", "Completed archive directory (inspect-result, inspect-scan or inspect-response).", "directory"},
         {"baseline", "Baseline completed job directory (compare only).", "directory"},
@@ -297,19 +312,20 @@ int main(int argc, char** argv) {
     if (parser.isSet(version)) { std::cout << "spacerad_cli " << SPACERAD_APP_VERSION << '\n'; return 0; }
     try {
         const auto positional = parser.positionalArguments();
-        if (positional.size() != 1 || !QStringList{"validate", "inspect-runtime", "run", "inspect-result", "compare", "plan-scan", "scan", "inspect-scan", "fold-response", "inspect-response"}.contains(positional[0]))
+        if (positional.size() != 1 || !QStringList{"validate", "inspect-runtime", "run", "inspect-result", "compare", "plan-scan", "scan", "inspect-scan", "fold-response", "inspect-response", "fold-local-response"}.contains(positional[0]))
             throw std::runtime_error("Choose exactly one command; use --help for supported commands");
         const auto command = positional[0];
         for (const auto& option : parser.optionNames()) {
             QString canonical = option == "p" ? "project" : option == "r" ? "runtime" : option == "o" ? "output" : option;
-            const bool allowed = (command == "run" && QStringList{"project", "runtime", "output", "histories", "timeout-seconds", "verbose"}.contains(canonical)) ||
+            const bool allowed = (command == "run" && QStringList{"project", "runtime", "output", "histories", "timeout-seconds", "verbose","fluence-settings"}.contains(canonical)) ||
                 (command == "validate" && (canonical == "project" || canonical == "histories")) ||
                 (command == "inspect-runtime" && canonical == "runtime") || (command == "inspect-result" && canonical == "job") ||
                 (command == "compare" && (canonical == "baseline" || canonical == "candidate")) ||
                 (command == "plan-scan" && QStringList{"project","histories","scan-settings"}.contains(canonical)) ||
                 (command == "scan" && QStringList{"project","histories","scan-settings","runtime","output","timeout-seconds","verbose"}.contains(canonical)) ||
                 ((command == "inspect-scan" || command == "inspect-response") && canonical == "job") ||
-                (command == "fold-response" && QStringList{"project","response","output"}.contains(canonical));
+                (command == "fold-response" && QStringList{"project","response","output"}.contains(canonical)) ||
+                (command == "fold-local-response" && (canonical == "job" || canonical == "response"));
             if (!allowed) throw std::runtime_error("Option is not supported by this command");
             if (parser.values(canonical).size() > 1) throw std::runtime_error("Duplicate option value");
         }
@@ -317,6 +333,12 @@ int main(int argc, char** argv) {
         if (command == "scan") return scan(app, parser, reporter);
         if (command == "plan-scan") {const auto input=loadInput(parser);reporter.event("scan-planned",{{"exit_code",0},{"plan",planShieldingScan(input.project,scanSettings(parser))}});return 0;}
         if (command == "inspect-scan") {reporter.event("archived-scan",{{"exit_code",0},{"report",loadShieldingScan(parser.value("job"))}});return 0;}
+        if (command == "fold-local-response") {
+            const auto run=loadArchivedRun(parser.value("job"));
+            const auto table=loadDeviceResponseCsv(parser.value("response"));
+            reporter.event("local-response-folded",{{"exit_code",0},{"report",foldTargetFluenceResponse(run,table)}});
+            return 0;
+        }
         if (command == "fold-response") {
             if (parser.value("response").trimmed().isEmpty() || parser.value("output").trimmed().isEmpty())
                 throw std::runtime_error("A response CSV and a new output directory are required");
