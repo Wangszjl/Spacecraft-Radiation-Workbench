@@ -14,3 +14,7 @@ The reference field is retained in the audit archive but is not independently au
 the OBC_Si sensitive component of `examples/projects/spacecraft-tid-assembly.json`.
 They exercise mismatched energy knots and two incident species. They are not
 material NIEL data, device cross-section measurements or engineering defaults.
+
+Use `obc-convergence-synthetic-ddd.csv` with `obc-fluence-settings.json` for the
+[post-shield response study](../../docs/HISTORY_RESPONSE_STUDY.md). Its six
+artificial curves exercise transport secondaries and energy-dependent scoring.

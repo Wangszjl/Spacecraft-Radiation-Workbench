@@ -1,0 +1,19 @@
+{
+  "schema": "spacerad.target-fluence-settings/1",
+  "target_id": "OBC_Si",
+  "energy_edges_MeV": [
+    1e-9,
+    0.01,
+    0.1,
+    0.5,
+    1,
+    2,
+    3,
+    5,
+    8,
+    20,
+    50,
+    100,
+    150
+  ]
+}

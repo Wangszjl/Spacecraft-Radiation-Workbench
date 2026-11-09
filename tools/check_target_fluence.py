@@ -4,6 +4,9 @@ import json
 import math
 from pathlib import Path
 import subprocess
+import sys
+
+from history_response_study import summarize_group, uncovered_bins
 
 from run_energy_response import cli_environment
 
@@ -196,6 +199,65 @@ def main():
     check(report["status"]=="incomplete_observed_coverage" and report["uncovered_observed_fluence_cm-2"]>0 and
           report["observed_folded_value"] is None and report["standard_error"] is None,
           "Incomplete observed response coverage suppresses the total estimate and standard error")
+    missing = uncovered_bins(incomplete, incomplete["settings"]["response_table"])
+    check(len(missing)==1 and missing[0]["species"]=="proton" and missing[0]["lower_MeV"]==10.5 and
+          missing[0]["upper_MeV"]==12 and missing[0]["nonzero_histories"]>0,
+          "Coverage diagnosis identifies the observed particle and uncovered energy interval")
+
+    # Pooled moments must include between-seed variance and retain incomplete coverage.
+    samples = ((0, 1, 3), (0, 2, 7))
+    moments = [(sum(values)/len(values), sum((v-sum(values)/len(values))**2 for v in values)) for values in samples]
+    rows = [{"histories":len(values), "case":str(i), "status":"estimated", "rse":0.2,
+             "nonzero_response_histories":2, "response":m[0], "standard_error":math.sqrt(m[1]/6)}
+            for i, (values, m) in enumerate(zip(samples, moments))]
+    plan = {"min_positive":2, "max_rse":0.5}
+    grouped = summarize_group(rows, moments, plan, 1)
+    combined = samples[0]+samples[1]
+    mean = sum(combined)/len(combined)
+    error = math.sqrt(sum((v-mean)**2 for v in combined)/(len(combined)*(len(combined)-1)))
+    check(math.isclose(grouped["response"],mean,rel_tol=1e-12) and
+          math.isclose(grouped["standard_error"],error,rel_tol=1e-12),
+          "Budget pooling reproduces direct statistics over concatenated histories")
+    rows[1]["status"] = "incomplete_observed_coverage"
+    grouped = summarize_group(rows, moments, plan, 1)
+    check(grouped["response"] is None and grouped["standard_error"] is None and
+          not grouped["passes_precision_screen"], "Budget pooling with incomplete coverage retains unknown totals")
+
+    study = root/"seed-study"
+    study_command = [sys.executable, str(Path(__file__).with_name("history_response_study.py"))]
+    study_args = ["--cli",str(cli),"--runtime",str(runtime),"--output-dir",str(study)]
+    def study_invoke(mode, extra=(), expected=0):
+        p = subprocess.run(study_command+[mode,*study_args,*map(str,extra)],env=env,capture_output=True,
+                           encoding="utf-8",timeout=120)
+        if p.returncode != expected:
+            raise ValueError((mode,p.returncode,p.stdout,p.stderr))
+        return p.stderr
+    study_invoke("run",["--project",root/"vacuum-input.json","--fluence-settings",settings,
+        "--response",linear,"--histories",8000,16000,"--seeds",71467,98689,154873,242897,"--parallel",2])
+    summary_path = study/"summary.json"
+    original = summary_path.read_bytes()
+    result = json.loads(original)
+    check([g["total_histories"] for g in result["budgets"]]==[16000,32000] and
+          len({r["seed"] for r in result["cases"]})==4 and
+          all(r["status"]=="estimated" for r in result["cases"]),
+          "Four real Worker archives preserve both fixed budgets and distinct seeds")
+    study_invoke("inspect")
+    checks.append("Study verifies archived runs and reproduces its report")
+    try:
+        result["budgets"][0]["standard_error"] *= 2
+        summary_path.write_text(json.dumps(result),encoding="utf-8")
+        check("Study report differs" in study_invoke("inspect",expected=1),
+              "Offline study rejects a changed pooled standard error")
+    finally:
+        summary_path.write_bytes(original)
+    case_input = study/"case-01"/"input.json"
+    original = case_input.read_bytes()
+    try:
+        case_input.write_bytes(original+b" ")
+        check("input differs from the fixed plan" in study_invoke("inspect",expected=1),
+              "Offline study rejects an altered case input")
+    finally:
+        case_input.write_bytes(original)
     write("summary.json",{"passed":True,"checks":checks,"histories_per_run":n,
                           "incident_cm-2":fluence,"analytic_se_cm-2":analytic_se,
                           "vacuum_cm-2":total["fluence_cm-2"],"vacuum_se_cm-2":total["standard_error_cm-2"],
@@ -206,7 +268,7 @@ def main():
                           "independent_vacuum_response_se":expected_se,
                           "thin_shield_see_se":thin["history_response"]["standard_error"],
                           "scope":"Synthetic normalization and attenuation regression; not an independent shield-dose or device calibration benchmark"})
-    print(f"Target fluence and history response acceptance: {len(checks)} checks, five real Worker jobs")
+    print(f"Target fluence and history response acceptance: {len(checks)} checks, nine real Worker jobs")
 
 
 if __name__ == "__main__":
