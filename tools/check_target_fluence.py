@@ -61,10 +61,12 @@ def main():
     spec = {"schema":"spacerad.target-fluence-settings/1","target_id":"Target","energy_edges_MeV":[9,10.5,12]}
     settings = write("settings.json",spec)
 
-    def run(label, p, score_settings=settings, history_response=None):
+    def run(label, p, score_settings=settings, history_response=None, identify=False):
         directory = root / label
         source = write(f"{label}-input.json",p)
         response_args = ["--history-response",history_response] if history_response else []
+        if identify:
+            response_args += ["--identify-other-species"]
         terminal = invoke(label,"run","--project",source,"--runtime",runtime,"--output",directory,
                           "--fluence-settings",score_settings,"--timeout-seconds","120",*response_args,event="completed")
         field = invoke(label+"-inspect","inspect-result","--job",directory,event="archived-result")["summary"]["target_fluence"]
@@ -204,6 +206,42 @@ def main():
           missing[0]["upper_MeV"]==12 and missing[0]["nonzero_histories"]>0,
           "Coverage diagnosis identifies the observed particle and uncovered energy interval")
 
+    secondary_project = {**project, "events":12000, "volumes":[{**target,"material":"G4_Si","size_mm":[40,40,40]}]}
+    secondary_project["environment"] = {**project["environment"], "spectra":[
+        {**project["environment"]["spectra"][0],"energy_MeV":[80,90]}]}
+    secondary_grid = write("secondary-settings.json",{**spec,"energy_edges_MeV":[1e-9,0.01,0.1,1,10,100]})
+    secondary_job, secondary = run("secondary-particles",secondary_project,secondary_grid,table,identify=True)
+    detail = secondary["other_species_detail"]
+    other = secondary["other_species"]
+    check(secondary["schema"]=="spacerad.target-fluence/2" and len(detail)>1 and
+          all(row["particle"] not in secondary["species"] and type(row["pdg_encoding"]) is int and
+              row["score"]["moments"]["histories"]==12000 and row["score"]["moments"]["nonzero_histories"]>0
+              for row in detail) and math.isclose(math.fsum(row["score"]["fluence_cm-2"] for row in detail),
+                                                   other["fluence_cm-2"],rel_tol=1e-10),
+          "Real silicon transport identifies other particles and conserves aggregated weighted fluence")
+    missed = uncovered_bins(secondary, secondary["settings"]["response_table"])
+    check(any(row.get("identified_bins") and len(row["identified_bins"])==len(detail) for row in missed) and
+          secondary["history_response"]["status"]=="incomplete_observed_coverage" and
+          secondary["history_response"]["standard_error"] is None,
+          "Identification diagnoses missing response data without promoting an incomplete estimate")
+    path = secondary_job/"result.json"
+    raw = path.read_bytes()
+    def reject_detail(label, modify):
+        changed = json.loads(raw)
+        modify(changed["target_fluence"]["other_species_detail"])
+        try:
+            path.write_text(json.dumps(changed),encoding="utf-8")
+            invoke(label,"inspect-result","--job",secondary_job,code=2)
+            checks.append(label)
+        finally:
+            path.write_bytes(raw)
+    reject_detail("Archive rejects dropped secondary fluence",lambda rows: rows.pop())
+    reject_detail("Archive rejects duplicate secondary energy bins",lambda rows: rows.append(rows[0]))
+    reject_detail("Archive rejects changed secondary normalization",
+                  lambda rows: rows[0]["score"].update({"fluence_cm-2":0}))
+    reject_detail("Archive rejects out-of-range secondary identity",
+                  lambda rows: rows[0].update({"pdg_encoding":2**64-1}))
+
     # Pooled moments must include between-seed variance and retain incomplete coverage.
     samples = ((0, 1, 3), (0, 2, 7))
     moments = [(sum(values)/len(values), sum((v-sum(values)/len(values))**2 for v in values)) for values in samples]
@@ -232,7 +270,8 @@ def main():
         if p.returncode != expected:
             raise ValueError((mode,p.returncode,p.stdout,p.stderr))
         return p.stderr
-    study_invoke("run",["--project",root/"vacuum-input.json","--fluence-settings",settings,
+    detailed_settings = write("study-settings.json",{**spec,"schema":"spacerad.target-fluence-settings/3"})
+    study_invoke("run",["--project",root/"vacuum-input.json","--fluence-settings",detailed_settings,
         "--response",linear,"--histories",8000,16000,"--seeds",71467,98689,154873,242897,"--parallel",2])
     summary_path = study/"summary.json"
     original = summary_path.read_bytes()
@@ -268,7 +307,7 @@ def main():
                           "independent_vacuum_response_se":expected_se,
                           "thin_shield_see_se":thin["history_response"]["standard_error"],
                           "scope":"Synthetic normalization and attenuation regression; not an independent shield-dose or device calibration benchmark"})
-    print(f"Target fluence and history response acceptance: {len(checks)} checks, nine real Worker jobs")
+    print(f"Target fluence and history response acceptance: {len(checks)} checks, ten real Worker jobs")
 
 
 if __name__ == "__main__":

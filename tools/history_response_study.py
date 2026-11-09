@@ -61,6 +61,16 @@ def uncovered_bins(field, table):
                 add(species, "energy_bin", low, high, bins[i])
         add(species, "overflow", edges[-1], None, bins[-1])
     add("other_species", "unclassified_species", None, None, field["other_species"])
+    if missed and missed[-1]["species"] == "other_species" and "other_species_detail" in field:
+        detail = []
+        for row in field["other_species_detail"]:
+            i = row["bin_index"]
+            detail.append({"particle": row["particle"], "pdg_encoding": row["pdg_encoding"],
+                           "lower_MeV": edges[i-1] if i else None,
+                           "upper_MeV": edges[i] if i < len(edges) else None,
+                           "fluence_cm-2": row["score"]["fluence_cm-2"],
+                           "nonzero_histories": row["score"]["moments"]["nonzero_histories"]})
+        missed[-1]["identified_bins"] = detail
     return missed
 
 
@@ -80,7 +90,8 @@ def audit_case(cli, root, env, project, settings, case):
          (p["events"], p["seed"]) == (histories, seed), f"{name}: archive differs from the planned input")
     field = summary["target_fluence"]
     saved = dict(field["settings"])
-    need(saved.pop("schema") == "spacerad.target-fluence-settings/2", f"{name}: response table was not pinned")
+    expected_schema = "spacerad.target-fluence-settings/3" if settings["schema"].endswith("/3") else "spacerad.target-fluence-settings/2"
+    need(saved.pop("schema") == expected_schema, f"{name}: unexpected saved response settings schema")
     response_table = saved.pop("response_table")
     need(saved == {k: v for k, v in settings.items() if k != "schema"} and
          response_table["source_file"]["sha256"] == sha(root/"response.csv"),
@@ -156,13 +167,18 @@ def summarize_group(rows, moments, plan, factor):
     return group
 
 
+def check_study_settings(settings):
+    need(settings["schema"] in ("spacerad.target-fluence-settings/1", "spacerad.target-fluence-settings/3")
+         and "response_table" not in settings, "Supply fluence settings /1 or /3 without a pinned table")
+
+
 def reconstruct(cli, root, env):
     plan = read(root/"plan.json")
     cases = plan_cases(plan)
     for name in ("parent.json", "fluence.json", "response.csv"):
         need(plan["inputs_sha256"][name] == sha(root/name), f"Study input hash mismatch: {name}")
     project, settings = read(root/"parent.json"), read(root/"fluence.json")
-    need(settings["schema"] == "spacerad.target-fluence-settings/1", "Supply fluence settings without a pinned table")
+    check_study_settings(settings)
     audited = [audit_case(cli, root, env, project, settings, case) for case in cases]
     identity, fixed = audited[0][:2]
     need(all(a[:2] == (identity, fixed) for a in audited),
@@ -210,8 +226,7 @@ def main():
         cases = plan_cases(plan)
         inputs = {"parent.json": args.project.read_bytes(), "fluence.json": args.fluence_settings.read_bytes(),
                   "response.csv": args.response.read_bytes()}
-        need(read(args.fluence_settings)["schema"] == "spacerad.target-fluence-settings/1",
-             "Supply fluence settings without a pinned table")
+        check_study_settings(read(args.fluence_settings))
         root.mkdir(parents=True)
         for name, data in inputs.items():
             (root/name).write_bytes(data)

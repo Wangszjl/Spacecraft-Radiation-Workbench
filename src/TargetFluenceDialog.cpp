@@ -65,9 +65,8 @@ std::optional<std::pair<Json,QString>> configureTargetFluence(QWidget* parent,co
                 if(!ok)throw std::runtime_error("Energy edges must be numeric");
                 values.push_back(value);
             }
-            Json settings={{"schema","spacerad.target-fluence-settings/1"},{"target_id",target->currentText().toStdString()},{"energy_edges_MeV",values}};
+            Json settings={{"schema","spacerad.target-fluence-settings/3"},{"target_id",target->currentText().toStdString()},{"energy_edges_MeV",values}};
             if(!responseFile->text().trimmed().isEmpty()){
-                settings["schema"]="spacerad.target-fluence-settings/2";
                 settings["response_table"]=loadDeviceResponseCsv(responseFile->text()).toJson();
             }
             auto spec=engine::TargetFluenceSpec::fromJson(settings);
@@ -111,14 +110,26 @@ class Review final:public QDialog {
             };
             add(tr("总注量"),tr("全能域"),f.at("total"));
             add(tr("其他粒子"),tr("全能域"),f.at("other_species"));
-            for(const auto& [species,rows]:f.at("species").items())for(size_t i=0;i<rows.size();++i){
-                const auto range=i==0?tr("下溢"):i==edges.size()?tr("上溢"):QString("[%1, %2)").arg(text(edges[i-1]),text(edges[i]));
-                add(QString::fromStdString(species),range,rows[i]);
+            auto range=[&](size_t i){
+                if(i==0)return tr("< %1").arg(text(edges.front()));
+                if(i==edges.size())return tr("≥ %1").arg(text(edges.back()));
+                return QString("[%1, %2)").arg(text(edges[i-1]),text(edges[i]));
+            };
+            if(f.contains("other_species_detail"))for(const auto& entry:f.at("other_species_detail")){
+                add(tr("↳ %1（PDG %2）").arg(text(entry.at("particle")),text(entry.at("pdg_encoding"))),
+                    range(entry.at("bin_index").get<size_t>()),entry.at("score"));
             }
+            for(const auto& [species,rows]:f.at("species").items())for(size_t i=0;i<rows.size();++i)
+                add(QString::fromStdString(species),range(i),rows[i]);
             status->setText(tr("档案已核验：%1。零命中能箱的标准误未知。").arg(text(spec.at("target_id"))));
+            if(f.contains("other_species_detail")&&!f.at("other_species_detail").empty())
+                status->setText(status->text()+tr(" 缩进项为“其他粒子”的明细，已计入汇总。"));
+            else if(!f.contains("other_species_detail")&&f.at("other_species").at("moments").at("nonzero_histories")>0)
+                status->setText(status->text()+tr(" 此档案仅保存其他粒子汇总，重新输运可生成明细。"));
             fold->setEnabled(true);
             if(showPinned&&f.contains("history_response")){
                 report=f.at("history_response");
+                if(f.contains("other_species_detail"))report["other_species_detail"]=f.at("other_species_detail");
                 const auto identity=run.summary();
                 report["transport_result_sha256"]=identity.at("result_sha256");
                 report["project_sha256"]=identity.at("project_sha256");

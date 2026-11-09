@@ -32,6 +32,7 @@ Json runTransport(const Project& p,const Json& fluence,const std::string& settin
     for(const auto& entry:state.scores)
         if(entry.second.ionizing.count!=p.events) throw std::runtime_error("Run ended before all requested histories completed");
     for(auto& m:state.fluenceMoments)padZeroHistories(m,p.events);
+    for(auto& [key,m]:state.otherFluenceMoments)padZeroHistories(m,p.events);
     return buildScores(state);
 }
 }

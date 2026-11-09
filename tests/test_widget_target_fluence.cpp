@@ -1,4 +1,5 @@
 #include <spacerad/WorkbenchWidget.h>
+#include <spacerad/Results.h>
 #include "runtime/ProjectFile.h"
 #include <QApplication>
 #include <QDialog>
@@ -38,7 +39,7 @@ void write(const QString& path,const QByteArray& bytes){
 int main(int argc,char** argv){
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
     QApplication app(argc,argv);
-    if(argc!=4)return 2;
+    if(argc!=4&&argc!=5)return 2;
     try{
         const auto out=QFileInfo(QString::fromLocal8Bit(argv[3])).absoluteFilePath();
         if(QFileInfo::exists(out)||!QDir().mkpath(out))return 2;
@@ -83,7 +84,10 @@ int main(int argc,char** argv){
         auto* view=child<QDialog>(host,"spaceradTargetFluenceReview");
         check(child<QLineEdit>(*view,"spaceradTargetFluenceArchive")->text()==job,"Viewer prefills the accepted archive");
         check(child<QTableWidget>(*view,"spaceradTargetFluenceBins")->rowCount()==26,"Viewer displays six species with underflow and overflow plus total and other");
-        const auto score=Json::parse(accepted.toStdString()).at("target_fluence").at("history_response");
+        const auto fluence=Json::parse(accepted.toStdString()).at("target_fluence");
+        check(fluence.at("schema")=="spacerad.target-fluence/2"&&fluence.at("other_species_detail").empty(),
+              "Desktop requests particle identification, with empty detail when none is observed");
+        const auto score=fluence.at("history_response");
         check(score.at("standard_error").is_number()&&score.at("standard_error")>0,"Desktop archive contains a positive history response standard error");
         check(child<QPushButton>(*view,"spaceradTargetFluenceExport")->isEnabled()&&
               child<QPlainTextEdit>(*view,"spaceradTargetFluenceFolded")->toPlainText().contains("MC"),
@@ -100,6 +104,19 @@ int main(int argc,char** argv){
         check(!exportButton->isEnabled(),"Invalid response leaves no exportable result");
         child<QLineEdit>(*view,"spaceradTargetFluenceArchive")->setText(out+"/missing-job");
         check(child<QTableWidget>(*view,"spaceradTargetFluenceBins")->rowCount()==0,"Changing archive clears stale bins");
+        if(argc==5){
+            const auto diagnostic=QString::fromLocal8Bit(argv[4]);
+            const auto saved=loadArchivedRun(diagnostic).result().at("target_fluence");
+            const auto& detail=saved.at("other_species_detail");
+            child<QLineEdit>(*view,"spaceradTargetFluenceArchive")->setText(diagnostic);
+            child<QPushButton>(*view,"spaceradTargetFluenceInspect")->click();
+            auto* bins=child<QTableWidget>(*view,"spaceradTargetFluenceBins");
+            check(!detail.empty()&&bins->rowCount()==2+6*(int(saved.at("settings").at("energy_edges_MeV").size())+1)+int(detail.size())&&
+                  bins->item(2,0)->text().contains(QString::fromStdString(detail.front().at("particle")))&&
+                  bins->item(2,0)->text().contains("PDG")&&!bins->item(2,1)->text().isEmpty(),
+                  "Viewer shows real additional particle identities and energy intervals");
+            check(view->grab().save(out+"/secondary-review.png"),"Secondary particle screenshot saved");
+        }
         std::cout<<checks<<" native target-fluence checks passed\n";
         return 0;
     }catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}

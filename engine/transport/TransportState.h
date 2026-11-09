@@ -53,6 +53,8 @@ struct State {
     std::string fluenceHash;
     std::map<size_t,double> fluenceEvent;
     std::vector<Moments> fluenceMoments;
+    std::map<OtherFluenceBin,double> otherFluenceEvent;
+    OtherFluenceMoments otherFluenceMoments;
     Moments fluenceTotal,historyResponse;
     int eventId = 0;
     double eventWeight = 1;

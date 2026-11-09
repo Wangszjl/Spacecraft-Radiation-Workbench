@@ -19,7 +19,8 @@
 ```powershell
 spacerad_cli run --project project.json --runtime runtime.json --fluence-settings fluence.json --output new-job
 spacerad_cli run --project project.json --runtime runtime.json --fluence-settings fluence.json --history-response device-response.csv --output response-job
-spacerad_cli inspect-result --job response-job
+spacerad_cli run --project project.json --runtime runtime.json --fluence-settings fluence.json --history-response device-response.csv --identify-other-species --output diagnostic-job
+spacerad_cli inspect-result --job diagnostic-job
 spacerad_cli fold-local-response --job new-job --response device-response.csv
 ```
 
@@ -28,6 +29,16 @@ spacerad_cli fold-local-response --job new-job --response device-response.csv
 运行档案保存设置原始字节及 SHA-256。实时验收与离线复核按原始矩重算归一化、标准误和总量，核对几何体积及粒子／分箱布局。SDK 可通过 `AnalysisService::start(project, directory, settings)` 启动，通过 `loadArchivedRun` 读取，并用 `foldTargetFluenceResponse` 折合；Qt 宿主可用 `WorkbenchWidget::showTargetFluence(archive)` 打开核验界面。
 
 局部折合复用[器件响应 CSV](DEVICE_RESPONSE.md)的单位及来源字段。所有曲线必须对应被计分的靶区，且覆盖每个有观测贡献的粒子和能箱；发现下溢、上溢或其他粒子的非零贡献就拒绝。无非零历史时结果未知。对于有观测值的分箱，采用箱内均匀密度给出中心估计，用曲线在箱内的最小／最大值给出观测贡献的响应范围。该范围不是置信区间，也不约束漏采贡献；离线更换响应表后，分箱边际统计无法恢复箱间协方差，因此离线折合的总标准误保持未知。
+
+## 识别其他粒子
+
+桌面启动靶区注量时自动保存其他粒子明细。CLI 可使用 `--identify-other-species`，SDK 可传入 `spacerad.target-fluence-settings/3`。该设置接受可选的 `response_table`，输出的靶区注量字段使用 `spacerad.target-fluence/2`。原 /1 和 /2 设置及既有档案仍可读取。
+
+`other_species_detail` 按 Geant4 粒子名、PDG 编码和 `bin_index` 保存实际有贡献的行。与常规粒子使用同一能箱边界，索引 0 表示下溢，索引等于边界数时表示上溢，其余索引 i 表示 `[edge[i−1], edge[i])`。行中的 `score` 包含逐历史矩、注量和标准误。粒子名和 PDG 编码直接来自 Geant4 的粒子定义。 [Geant4 粒子定义手册](https://geant4.web.cern.ch/documentation/pipelines/master/bfad_html/ForApplicationDevelopers/TrackingAndPhysics/particle.html)
+
+明细是 `other_species` 汇总的分解。各行注量可求和，非零历史数或标准误需按相关性理解，同一初级历史可能在多个明细行出现。档案核验检查注量守恒、历史计数、二阶矩可行性及能箱边界。明细最多 4096 个非零粒子／能箱组合，超出时任务报错。旧档案若只保存汇总，需重新输运才能获得明细。
+
+其他粒子仍属于响应未覆盖项。新明细用于定位所缺的响应数据；逐历史响应和离线折合继续使用现有六类粒子的曲线规则。双预算工具在原有未覆盖汇总项下附上 `identified_bins`，并保留完整响应为空的判定。
 
 ## 输运时固定响应表
 

@@ -36,6 +36,7 @@ Evidence and exact limits: [bootstrap acceptance](BOOTSTRAP_ACCEPTANCE.md). Thes
 - [ ] Qualified full-mission environments, broader model choices and independent measured-environment comparisons.
 - [x] User-supplied device DDD/SEE response-table fold, provenance, no-extrapolation checks, result archive and SDK API. This is deterministic response screening, not calibrated Geant4 DDD/DPA or SEE event transport. [Scope](DEVICE_RESPONSE.md).
 - [x] Per-history post-shield device-response statistics and reproducible two-budget seed studies. The AE8MIN/AP8MIN OBC study found incomplete particle coverage and insufficient sampling precision. [Study and open checks](HISTORY_RESPONSE_STUDY.md).
+- [x] Identified missing OBC response coverage for Si28, Si29 and Si30 by particle name, PDG encoding and kinetic-energy bin. Same-seed reruns preserve the original dose and fluence scores. [Evidence](HISTORY_RESPONSE_STUDY.md).
 - [ ] Geant4 displacement-damage/DPA and SEE event-level processes, calibrated response data and independent physical validation.
 - [x] First external-reference TID regression: thin silicon sphere, 10/20 MeV protons, analytic entry and fluence checks, 38 Windows checks. [PSTAR benchmark](PSTAR_BENCHMARK.md).
 - [ ] Independent physical validation and geometry/dose sensitivity studies.

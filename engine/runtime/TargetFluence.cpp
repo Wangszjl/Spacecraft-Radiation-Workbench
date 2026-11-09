@@ -2,6 +2,7 @@
 #include "Geometry.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <set>
 #include <stdexcept>
 
@@ -102,6 +103,48 @@ std::vector<std::optional<double>> coefficients(const TargetFluenceSpec& s){
     need(std::any_of(values.begin(),values.end(),[](const auto& v){return v.has_value();}),"No fluence bin is fully covered by the response table");
     return values;
 }
+Json otherDetail(const TargetFluenceSpec& s,const OtherFluenceMoments& detail,
+                 const Moments& aggregate,double factor){
+    need(detail.size()<=maxOtherFluenceBins,"Too many identified secondary fluence bins");
+    Json out=Json::array();
+    double mean=0,maxSe=0,sumSquares=0;
+    std::int64_t nonzeroSum=0;
+    const double n=aggregate.count;
+    const auto& standard=fluenceSpecies();
+    for(const auto& [key,m]:detail){
+        const auto& [name,pdg,bin]=key;
+        need(!name.empty()&&name.size()<=160&&std::find(standard.begin(),standard.end(),name)==standard.end()&&
+             bin<=s.edges.size(),"Invalid identified secondary fluence bin");
+        need(m.count==aggregate.count&&m.nonzero>0&&m.nonzero<=aggregate.nonzero,
+             "Identified secondary history counts disagree with other-species total");
+        mean+=m.mean;maxSe+=m.standardError();sumSquares+=m.m2+n*m.mean*m.mean;nonzeroSum+=m.nonzero;
+        out.push_back({{"particle",name},{"pdg_encoding",pdg},{"bin_index",bin},{"score",row(m,factor)}});
+    }
+    const double totalSquares=aggregate.m2+n*aggregate.mean*aggregate.mean;
+    need(near(mean,aggregate.mean)&&nonzeroSum>=aggregate.nonzero&&std::isfinite(sumSquares)&&std::isfinite(totalSquares)&&
+         (sumSquares<=totalSquares||near(sumSquares,totalSquares))&&
+         aggregate.standardError()<=maxSe+1e-8*std::max(maxSe,aggregate.mean),
+         "Identified secondary fluence does not conserve other-species moments");
+    return out;
+}
+OtherFluenceMoments decodeOtherDetail(const Json& field,int histories,size_t maxBin){
+    need(field.is_array()&&field.size()<=maxOtherFluenceBins,"Invalid identified secondary fluence array");
+    OtherFluenceMoments detail;
+    for(const auto& entry:field){
+        need(entry.is_object()&&entry.size()==4&&entry.at("particle").is_string(),"Invalid identified secondary fluence row");
+        const auto& pdg=entry.at("pdg_encoding");const auto& bin=entry.at("bin_index");
+        const bool validPdg=pdg.is_number_unsigned()?pdg.get<std::uint64_t>()<=std::numeric_limits<int>::max():
+            pdg.is_number_integer()&&pdg.get<std::int64_t>()>=std::numeric_limits<int>::min()&&
+            pdg.get<std::int64_t>()<=std::numeric_limits<int>::max();
+        const bool validBin=bin.is_number_unsigned()?bin.get<std::uint64_t>()<=maxBin:
+            bin.is_number_integer()&&bin.get<std::int64_t>()>=0&&bin.get<std::uint64_t>()<=maxBin;
+        need(validPdg&&validBin,"Invalid secondary PDG encoding or energy bin");
+        OtherFluenceBin key{entry.at("particle").get<std::string>(),pdg.get<int>(),bin.get<size_t>()};
+        need(detail.emplace(std::move(key),decode(entry.at("score").at("moments"),histories)).second,
+             "Duplicate identified secondary fluence bin");
+    }
+    return detail;
+}
 Json responseReport(const TargetFluenceSpec& s,const std::vector<Moments>& bins,const Moments& total,const Moments& response,double factor){
     need(response.count==total.count&&response.nonzero<=total.nonzero,"Invalid history response support");
     auto raw=moment(response);
@@ -138,13 +181,19 @@ const std::array<std::string,6>& fluenceSpecies(){
 Json TargetFluenceSpec::toJson() const{
     Json out={{"schema","spacerad.target-fluence-settings/1"},{"target_id",target},{"energy_edges_MeV",edges}};
     if(!responseTable.is_null()){out["schema"]="spacerad.target-fluence-settings/2";out["response_table"]=responseTable;}
+    if(identifyOtherSpecies)out["schema"]="spacerad.target-fluence-settings/3";
     return out;
 }
 TargetFluenceSpec TargetFluenceSpec::fromJson(const Json& j){
-    const bool response=j.is_object()&&j.value("schema",Json(nullptr))=="spacerad.target-fluence-settings/2";
-    need(j.is_object()&&((response&&j.size()==4&&j.at("response_table").is_object())||
-         (j.size()==3&&j.at("schema")=="spacerad.target-fluence-settings/1")),"Unsupported target fluence settings");
+    need(j.is_object(),"Unsupported target fluence settings");
+    const auto& schema=j.at("schema");
+    const bool detailed=schema=="spacerad.target-fluence-settings/3";
+    const bool response=j.contains("response_table");
+    need(j.size()==(response?4:3)&&(detailed||(response?schema=="spacerad.target-fluence-settings/2":
+         schema=="spacerad.target-fluence-settings/1"))&&(!response||j.at("response_table").is_object()),
+         "Unsupported target fluence settings");
     TargetFluenceSpec s;
+    s.identifyOtherSpecies=detailed;
     s.target=j.at("target_id");
     need(!s.target.empty(),"Target ID required");
     const auto& edges=j.at("energy_edges_MeV");
@@ -168,7 +217,7 @@ double TargetFluenceSpec::volume(const Project& p) const{
     }
     throw std::runtime_error("Fluence target must be a sensitive component ID");
 }
-Json makeTargetFluence(const Project& p,const TargetFluenceSpec& s,const std::string& hash,const std::vector<Moments>& m,const Moments& total,const Moments* response){
+Json makeTargetFluence(const Project& p,const TargetFluenceSpec& s,const std::string& hash,const std::vector<Moments>& m,const Moments& total,const Moments* response,const OtherFluenceMoments& detail){
     const auto stride=s.edges.size()+1;
     const double volume=s.volume(p),factor=p.expectedPrimaries()*100/volume;
     need(std::isfinite(factor)&&factor>0&&m.size()==fluenceSpecies().size()*stride+1&&total.count==p.events,"Invalid target fluence normalization");
@@ -181,10 +230,11 @@ Json makeTargetFluence(const Project& p,const TargetFluenceSpec& s,const std::st
         by[fluenceSpecies()[k]]=std::move(bins);
     }
     need(m.back().count==p.events&&near(sum+m.back().mean,total.mean),"Fluence bins do not conserve total track length");
-    Json out={{"schema","spacerad.target-fluence/1"},{"settings",s.toJson()},{"settings_sha256",hash},
+    Json out={{"schema",s.identifyOtherSpecies?"spacerad.target-fluence/2":"spacerad.target-fluence/1"},{"settings",s.toJson()},{"settings_sha256",hash},
             {"volume_mm3",volume},{"estimator","volume_track_length_pre_step_kinetic_energy"},
             {"bins","underflow, [lower,upper), overflow; other species aggregated separately"},
             {"total",row(total,factor)},{"species",by},{"other_species",row(m.back(),factor)}};
+    if(s.identifyOtherSpecies)out["other_species_detail"]=otherDetail(s,detail,m.back(),factor);
     if(response)out["history_response"]=responseReport(s,m,total,*response,factor);
     return out;
 }
@@ -201,11 +251,20 @@ void validateTargetFluence(const Project& p,const Json& result,const Json& setti
     moments.push_back(decode(field.at("other_species").at("moments"),p.events));
     std::optional<Moments> response;
     if(!s.responseTable.is_null())response=decode(field.at("history_response").at("covered_moments"),p.events);
-    const auto expected=makeTargetFluence(p,s,hash,moments,decode(field.at("total").at("moments"),p.events),response?&*response:nullptr);
+    const auto detail=s.identifyOtherSpecies?decodeOtherDetail(field.at("other_species_detail"),p.events,s.edges.size()):OtherFluenceMoments{};
+    const auto expected=makeTargetFluence(p,s,hash,moments,decode(field.at("total").at("moments"),p.events),response?&*response:nullptr,detail);
     need(field.size()==expected.size()&&field.at("volume_mm3").is_number()&&near(field.at("volume_mm3"),expected.at("volume_mm3")),"Fluence volume differs from project");
     for(const char* key:{"schema","settings","settings_sha256","estimator","bins"})need(field.at(key)==expected.at(key),"Fluence metadata differs from settings");
     for(const char* key:{"total","other_species"})checkRow(field.at(key),expected.at(key));
     for(const auto& name:fluenceSpecies())for(size_t i=0;i<by.at(name).size();++i)checkRow(by.at(name)[i],expected.at("species").at(name)[i]);
+    if(s.identifyOtherSpecies){
+        const auto& actual=field.at("other_species_detail");const auto& rows=expected.at("other_species_detail");
+        for(size_t i=0;i<rows.size();++i){
+            for(const char* key:{"particle","pdg_encoding","bin_index"})
+                need(actual[i].at(key)==rows[i].at(key),"Unexpected order of identified secondary fluence bins");
+            checkRow(actual[i].at("score"),rows[i].at("score"));
+        }
+    }
     if(response)checkResponse(field.at("history_response"),expected.at("history_response"));
 }
 }

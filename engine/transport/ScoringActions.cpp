@@ -14,7 +14,7 @@ class Event final:public G4UserEventAction {
     State& s;
 public:
     explicit Event(State& state):s(state) {}
-    void BeginOfEventAction(const G4Event* event) override { s.event.clear(); s.voxelEvent.clear();s.fluenceEvent.clear();s.primaryEntries.clear(); s.eventId=event->GetEventID(); }
+    void BeginOfEventAction(const G4Event* event) override { s.event.clear(); s.voxelEvent.clear();s.fluenceEvent.clear();s.otherFluenceEvent.clear();s.primaryEntries.clear(); s.eventId=event->GetEventID(); }
     void EndOfEventAction(const G4Event* event) override {
         if(s.voxelPhysical){auto spec=voxelSpec(s.project.voxelScoring);std::array<double,3> sums{};
             for(const auto& e:s.voxelEvent){for(int k=0;k<3;++k){auto& m=s.voxelMoments.at(e.first)[k];padZeroHistories(m,s.eventId);m.add(e.second[k]);sums[k]+=e.second[k];}}
@@ -54,6 +54,14 @@ public:
                 total+=length;
                 if(!coefficients.empty()&&coefficients.at(index))response+=length * (*coefficients[index]);
             }
+            for(const auto& [key,length]:s.otherFluenceEvent){
+                const double weighted=length*s.eventWeight;
+                if(weighted==0)continue;
+                auto& m=s.otherFluenceMoments[key];
+                if(s.otherFluenceMoments.size()>maxOtherFluenceBins)throw std::runtime_error("Too many identified secondary fluence bins");
+                padZeroHistories(m,s.eventId);
+                m.add(weighted);
+            }
             s.fluenceTotal.add(total*s.eventWeight);
             if(!coefficients.empty())s.historyResponse.add(response*s.eventWeight);
         }
@@ -75,16 +83,23 @@ public:
             if(cellIndex<0||cellIndex>=int(s.voxelMoments.size()))throw std::runtime_error("Invalid parameterised voxel copy index");}
         if(!s.fluenceMoments.empty()&&name==s.fluence.target&&step->GetStepLength()>0){
             const auto& species=fluenceSpecies();
-            const auto& particle=step->GetTrack()->GetDefinition()->GetParticleName();
+            const auto* definition=step->GetTrack()->GetDefinition();
+            const auto& particle=definition->GetParticleName();
             const auto it=std::find(species.begin(),species.end(),particle);
             size_t index=s.fluenceMoments.size()-1;
-            if(it!=species.end()){
+            const double length=step->GetStepLength()/mm*step->GetPreStepPoint()->GetWeight();
+            if(it!=species.end()||s.fluence.identifyOtherSpecies){
                 const auto& edges=s.fluence.edges;
                 const double energy=step->GetPreStepPoint()->GetKineticEnergy()/MeV;
                 if(!std::isfinite(energy)||energy<0)throw std::runtime_error("Invalid track kinetic energy");
-                index=(it-species.begin())*(edges.size()+1)+(std::upper_bound(edges.begin(),edges.end(),energy)-edges.begin());
+                const auto bin=size_t(std::upper_bound(edges.begin(),edges.end(),energy)-edges.begin());
+                if(it!=species.end())index=(it-species.begin())*(edges.size()+1)+bin;
+                else if(length!=0){
+                    s.otherFluenceEvent[{particle,definition->GetPDGEncoding(),bin}]+=length;
+                    if(s.otherFluenceEvent.size()>maxOtherFluenceBins)throw std::runtime_error("Too many identified secondary fluence bins in one history");
+                }
             }
-            s.fluenceEvent[index]+=step->GetStepLength()/mm*step->GetPreStepPoint()->GetWeight();
+            s.fluenceEvent[index]+=length;
         }
         if(s.scores.count(name)) {
             if(step->GetTrack()->GetParentID()==0 && step->GetPreStepPoint()->GetStepStatus()==fGeomBoundary)
